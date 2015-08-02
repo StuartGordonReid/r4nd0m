@@ -10,13 +10,6 @@ class QuandlInterface:
         self.api_key = api_key
 
     def get_data_set(self, argument):
-        try:
-            private = pandas.read_csv(".private.csv")
-            os.environ['HTTP_PROXY'] = private["HTTP"][0]
-            os.environ['HTTPS_PROXY'] = private["HTTPS"][0]
-        except FileNotFoundError:
-            print("No private settings found")
-
         assert isinstance(argument, Argument)
         data_frame = None
         try:
@@ -63,6 +56,7 @@ class QuandlInterface:
                 combined_data_frame = arg_data_frame
             else:
                 combined_data_frame = combined_data_frame.join(arg_data_frame)
+        combined_data_frame = combined_data_frame.dropna()
         return combined_data_frame
 
 

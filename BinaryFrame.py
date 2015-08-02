@@ -13,6 +13,22 @@ class BinaryFrame:
         self.bin_data = {}
         self.columns = self.data.columns
 
+    def convert_unbiased(self):
+        for c in self.data.columns:
+            cbin_data = ""
+            for i in range(len(self.data[c])):
+                if self.data[c][i] != 0.0:
+                    bin_r = bitstring.BitArray(float=self.data[c][i], length=64)
+                    bit_string = str(bin_r._getbin())
+                    if bit_string[0] == '1':
+                        bit_string = bit_string[1::]
+                        bit_string = bit_string.replace('1', '2').replace('0', '1').replace('2', '0')
+                        bit_string = '1' + bit_string
+                    cbin_data += bit_string
+                else:
+                    cbin_data += "0101010101010101010101010101010101010101010101010101010101010101"
+            self.bin_data[c] = cbin_data
+
     def convert_int(self):
         for c in self.data.columns:
             cbin_data = ""
@@ -27,7 +43,7 @@ class BinaryFrame:
         for c in self.data.columns:
             cbin_data = ""
             for i in range(len(self.data[c])):
-                bin_r = bitstring.BitArray(float=self.data[c][i], length=32)
+                bin_r = bitstring.BitArray(float=self.data[c][i], length=64)
                 cbin_data += str(bin_r._getbin())
             self.bin_data[c] = cbin_data
 
@@ -42,12 +58,12 @@ class BinaryFrame:
             self.bin_data[c] = cbin_data
 
 
-if __name__ == '__main__':
+def test_unbiased_conversion():
     f, sum_one, sum_zero = -1.0, 0, 0
-    bit_count = numpy.zeros(31)
+    bit_count = numpy.zeros(63)
     for i in range(21):
         if f != 0.0:
-            bin_r = bitstring.BitArray(float=f, length=32)
+            bin_r = bitstring.BitArray(float=f, length=64)
             bstring = str(bin_r._getbin())
 
             if bstring[0] == '1':
@@ -60,7 +76,7 @@ if __name__ == '__main__':
             sum_one += o
             sum_zero += z
 
-            for j in range(31):
+            for j in range(63):
                 bit_count[j] += int(bstring[j])
 
             print(f, "\t", bstring, z, o)
@@ -68,3 +84,7 @@ if __name__ == '__main__':
 
     print(sum_one, sum_zero, sum_zero-sum_one)
     print(bit_count)
+
+
+if __name__ == '__main__':
+    test_unbiased_conversion()
