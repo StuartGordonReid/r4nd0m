@@ -21,7 +21,7 @@ class RandomnessTester:
                 else:
                     count += 1
             sobs = count/math.sqrt(len(str_data))
-            p_val = spc.erfc(sobs/math.sqrt(2))
+            p_val = spc.erfc(math.fabs(sobs)/math.sqrt(2))
             if p_val < 0.01:
                 print(c, "FAIL Monobit Test", '%.16f' % p_val, '%.16f' % sobs)
             else:
