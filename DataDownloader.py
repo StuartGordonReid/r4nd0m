@@ -1,5 +1,3 @@
-__author__ = 'x433165'
-
 import os
 import Quandl
 import pandas
@@ -7,9 +5,18 @@ import pandas
 
 class QuandlInterface:
     def __init__(self, api_key):
+        """
+        An interface for downloading data from Quandl
+        :param api_key: [YOUR API KEY] (taken from the .private.csv file)
+        """
         self.api_key = api_key
 
     def get_data_set(self, argument):
+        """
+        This method tries to fetch a data set from Quandl
+        :param argument: an argument object which contains the information to construct the request
+        :return: a pandas DataFrame containing the data
+        """
         assert isinstance(argument, Argument)
         data_frame = None
         try:
@@ -36,13 +43,17 @@ class QuandlInterface:
             print("Code format error")
         except Quandl.MissingToken:
             print("Missing token")
-
         if data_frame is None:
             raise Exception("Data Set Not Initialized")
         else:
             return data_frame
 
     def get_data_sets(self, arguments):
+        """
+        This method just calls the get_data_set() method to download and join various data sets
+        :param arguments: a list of Argument objects
+        :return: a pandas DataFrame
+        """
         # assert isinstance(arguments, [Argument])
         combined_data_frame = None
         for arg in arguments:
@@ -62,12 +73,24 @@ class QuandlInterface:
 
 class Argument:
     def __init__(self, id, start, end, prefix=None, drop=None, rdiff="none", collapse="none"):
+        """
+        An Argument object which contains the information to construct a request to send to Quandl
+        :param id: the id of the data set
+        :param start: the start date
+        :param end: the end date
+        :param prefix: the database prefix
+        :param drop: the columns to drop from the dataframe
+        :param rdiff: the transformation to do (usually percentage change)
+        :param collapse: the frequency of data to download
+        :return:
+        """
         self.id = id
         self.start = start
         self.end = end
         self.transformation = rdiff
         self.collapse = collapse
         self.prefix = prefix
+        # The default drop columns for Google Finance data
         if drop is None:
             drop = ["High", "Low", "Open", "Volume"]
         self.drop = drop

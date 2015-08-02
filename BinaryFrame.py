@@ -1,6 +1,3 @@
-__author__ = 'x433165'
-
-
 import bitstring
 import pandas
 import numpy
@@ -8,12 +5,24 @@ import numpy
 
 class BinaryFrame:
     def __init__(self, data):
+        """
+        Initialization method for a Binary Frame object
+        :param data: a pandas DataFrame to convert
+        """
         assert isinstance(data, pandas.DataFrame)
         self.data = data
         self.bin_data = {}
         self.columns = self.data.columns
 
     def convert_unbiased(self):
+        """
+        A method for converting a floating point binary pandas DataFrame into a Dictionary of binary strings
+        1) Convert the floating points as per the IEEE 754 standard
+        2) Check if the first bit is 1 or 0 (+ or -)
+        3) If negative flip the bits in the string
+        4) Special case - if the floating point number is 0, then return an unbiased string
+        :return:
+        """
         for c in self.data.columns:
             cbin_data = ""
             for i in range(len(self.data[c])):
@@ -29,25 +38,14 @@ class BinaryFrame:
                     cbin_data += "0101010101010101010101010101010101010101010101010101010101010101"
             self.bin_data[c] = cbin_data
 
-    def convert_int(self):
-        for c in self.data.columns:
-            cbin_data = ""
-            for i in range(len(self.data[c])):
-                int_r = abs(int((self.data[c][i]+0.0000001)*1000))
-                bin_r = str(bin(int_r))[2:]
-                # print(bin_r)
-                cbin_data += bin_r
-            self.bin_data[c] = cbin_data
-
-    def convert_754(self):
-        for c in self.data.columns:
-            cbin_data = ""
-            for i in range(len(self.data[c])):
-                bin_r = bitstring.BitArray(float=self.data[c][i], length=64)
-                cbin_data += str(bin_r._getbin())
-            self.bin_data[c] = cbin_data
-
     def discretize(self):
+        """
+        A method for discretizing a pandas DataFrame into a Dictionary of Binary Strings
+        1) If the return is +, then set the equivalent bit to 1
+        2) If the return is -, then set the equivalent bit to 0
+        Note that using this method compresses the data significantly
+        :return:
+        """
         for c in self.data.columns:
             cbin_data = ""
             for i in range(len(self.data[c])):

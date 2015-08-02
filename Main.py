@@ -1,6 +1,3 @@
-__author__ = 'x433165'
-
-
 from DataDownloader import QuandlInterface, Argument
 from RandomnessTests import RandomnessTester
 from BinaryFrame import BinaryFrame
