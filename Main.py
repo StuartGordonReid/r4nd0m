@@ -32,7 +32,7 @@ def construct_binary_frame(method, token):
     data_sets = ["SBK", "MTN"]
     data_prefix = "GOOG/JSE_"
     transform = "rdiff"
-    start_date = "2014-01-01"
+    start_date = "2010-01-01"
     end_date = "2015-01-01"
     my_arguments = []
     for ds in data_sets:
@@ -56,15 +56,18 @@ if __name__ == '__main__':
     prng_binary_frame = BinaryFrame(prng_data)
     prng_binary_frame.convert_unbiased()
     rng_tester = RandomnessTester(prng_binary_frame)
-    rng_tester.mono_bit_test()
+    rng_tester.monobit_test()
+    rng_tester.block_frequency_test(6400)
 
     print("\nTesting Market Data Using Unbiased Converter")
     t = setup_environment()
     my_binary_frame = construct_binary_frame("convert", t)
     rng_tester = RandomnessTester(my_binary_frame)
-    rng_tester.mono_bit_test()
+    rng_tester.monobit_test()
+    rng_tester.block_frequency_test(6400)
 
     print("\nTesting Market Data Using Discretization")
     my_binary_frame = construct_binary_frame("discretize", t)
     rng_tester = RandomnessTester(my_binary_frame)
-    rng_tester.mono_bit_test()
+    rng_tester.monobit_test()
+    rng_tester.block_frequency_test(100)
