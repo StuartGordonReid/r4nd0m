@@ -47,7 +47,7 @@ class QuandlInterface:
         except Quandl.MissingToken:
             print("Missing token")
         if data_frame is None:
-            raise Exception("Data Set Not Initialized")
+            raise Exception("Data Set Not Initialized", argument.id)
         else:
             return data_frame
 

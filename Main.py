@@ -27,7 +27,7 @@ def setup_environment():
 
 def construct_binary_frame(method, token):
     downloader = QuandlInterface(token)
-    data_sets = ["INDEX_GSPC", "FUND_NASDX"]
+    data_sets = ["INDEX_GSPC", "FUND_NASDX", "INDEX_SSEC", "INDEX_N225"]
     data_prefix = "YAHOO/"
     transform = "rdiff"
     start_date = "2000-01-01"
@@ -47,7 +47,7 @@ def construct_binary_frame(method, token):
 
 
 if __name__ == '__main__':
-    print("\nTesting Mersenne Twister Using Unbiased Converter")
+    print("\nTesting Mersenne Twister Using Unbiased Converter\n")
     prng = numpy.random.uniform(low=-1.0, high=1.0, size=80000)
     prng_data = pandas.DataFrame(numpy.array(prng))
     prng_data.columns = ["Mersenne"]
@@ -56,12 +56,13 @@ if __name__ == '__main__':
     rng_tester = RandomnessTester(prng_binary_frame)
     rng_tester.run_test_suite(6400)
 
+    print("\nTesting Mersenne Twister Using Discretization\n")
     prng_binary_frame = BinaryFrame(prng_data)
     prng_binary_frame.discretize()
     rng_tester = RandomnessTester(prng_binary_frame)
     rng_tester.run_test_suite(100)
 
-    print("\nTesting Deterministic Sequence Using Unbiased Converter")
+    print("\nTesting Deterministic Sequence Using Unbiased Converter\n")
     nrand = numpy.empty(80000)
     for i in range(80000):
         nrand[i] = (i % 10) / 10
@@ -73,19 +74,19 @@ if __name__ == '__main__':
     rng_tester = RandomnessTester(nrand_binary_frame)
     rng_tester.run_test_suite(6400)
 
-    print("\nTesting Deterministic Sequence Using Discretization")
+    print("\nTesting Deterministic Sequence Using Discretization\n")
     nrand_binary_frame = BinaryFrame(nrand_data)
     nrand_binary_frame.discretize()
     rng_tester = RandomnessTester(nrand_binary_frame)
     rng_tester.run_test_suite(100)
 
-    print("\nTesting Market Data Using Unbiased Converter")
+    print("\nTesting Market Data Using Unbiased Converter\n")
     t = setup_environment()
     my_binary_frame = construct_binary_frame("convert", t)
     rng_tester = RandomnessTester(my_binary_frame)
     rng_tester.run_test_suite(6400)
 
-    print("\nTesting Market Data Using Discretization")
+    print("\nTesting Market Data Using Discretization\n")
     my_binary_frame = construct_binary_frame("discretize", t)
     rng_tester = RandomnessTester(my_binary_frame)
     rng_tester.run_test_suite(100)
