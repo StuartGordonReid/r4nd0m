@@ -39,7 +39,11 @@ class RandomnessTester:
                   "p value =", '%.6f' % p_val + Colours.End)
             return True
 
-    def run_test_suite(self, block_size):
+    def run_test_suite(self, block_size: int):
+        """
+        This method runs all of the tests included in the NIST test suite for randomness
+        :param block_size: the size of the blocks to look at
+        """
         for c in self.bin.columns:
             print("\t", Colours.Bold + "Running tests for", c + Colours.End)
             str_data = self.bin.bin_data[c]
@@ -49,7 +53,13 @@ class RandomnessTester:
                 if block_frequency_result:
                     runs_result = self.runs_test(str_data, c)
                     if runs_result:
-                        self.pass_tests()
+                        longest_run_result = self.longest_run_test(str_data, c, block_size)
+                        if longest_run_result:
+                            self.pass_tests()
+                        else:
+                            self.fail_tests()
+                    else:
+                        self.fail_tests()
                 else:
                     self.fail_tests()
             else:
@@ -61,13 +71,15 @@ class RandomnessTester:
     def pass_tests(self):
         print("\t", Colours.Bold + "Passed all randomness tests" + Colours.End)
 
-    def monobit_test(self, str_data, column):
+    def monobit_test(self, str_data: str, column: str):
         """
         **From the NIST documentation**
         The focus of this test is the proportion of zeros and ones for the entire sequence. The purpose of this test is
         to determine whether the number of ones and zeros in a sequence are approximately the same as would be expected
         for a truly random sequence. This test assesses the closeness of the fraction of ones to 1/2, that is the number
         of ones and zeros ina  sequence should be about the same. All subsequent tests depend on this test.
+        :param str_data: this is the bit string being tested.
+        :return: True | False if the test passed or failed
         """
         count = 0
         # If the char is 0 minus 1, else add 1
@@ -81,13 +93,16 @@ class RandomnessTester:
         p_val = spc.erfc(math.fabs(sobs) / math.sqrt(2))
         return self.print_result("Monobit Test", column, p_val)
 
-    def block_frequency_test(self, str_data, column, block_size):
+    def block_frequency_test(self, str_data: str, column: str, block_size: int):
         """
         **From the NIST documentation**
         The focus of this tests is the proportion of ones within M-bit blocks. The purpose of this tests is to determine
         whether the frequency of ones in an M-bit block is approximately M/2, as would be expected under an assumption
         of randomness. For block size M=1, this test degenerates to the monobit frequency test.
+        :param str_data: this is the bit string being tested.
+        :param column: this is the name of the bit string being tested.
         :param block_size: the size of the blocks that the binary sequence is partitioned into
+        :return: True | False if the test passed or failed
         """
         # Work out the number of blocks, discard the remainder
         num_blocks = int(len(str_data) / block_size)
@@ -112,7 +127,18 @@ class RandomnessTester:
         p_val = spc.gammainc(num_blocks / 2, stat / 2)
         return self.print_result("Block Frequency Test", column, p_val)
 
-    def runs_test(self, str_data, column):
+    def runs_test(self, str_data: str, column: str):
+        """
+        **From the NIST documentation**
+        The focus of this tests if the total number of runs in the sequences, where a run is an uninterrupted sequence
+        of identical bits. A run of length k consists of k identical bits and is bounded before and after with a bit of
+        the opposite value. The purpose of the runs tests is to determine whether the number of runs of ones and zeros
+        of various lengths is as expected for a random sequence. In particular, this tests determines whether the
+        oscillation between zeros and ones is either too fast or too slow.
+        :param str_data: this is the bit string being tested.
+        :param column: this is the name of the bit string being tested.
+        :return: True | False if the test passed or failed
+        """
         ones_count, n = 0, len(str_data)
         for char in str_data:
             if char == '1':
@@ -125,3 +151,19 @@ class RandomnessTester:
         den = (2 * math.sqrt(2 * n) * proportion * (1 - proportion))
         p_val = spc.erfc(num/den)
         return self.print_result("Runs Test", column, p_val)
+
+    def longest_run_test(self, str_data: str, column: str, block_sizes=None):
+        """
+        **From the NIST documentation**
+        The focus of the tests is the longest run of ones within M-bit blocks. The purpose of this tests is to determine
+        whether the length of the longest run of ones within the tested sequences is consistent with the length of the
+        longest run of ones that would be expected in a random sequence. Note that an irregularity in the expected
+        length of the longest run of ones implies that there is also an irregularity ub tge expected length of the long
+        est run of zeroes. Therefore, only one test is necessary for this statistical tests of randomness
+        :param str_data: this is the bit string being tested.
+        :param column: this is the name of the bit string being tested.
+        :param block_size: the size of the blocks that the binary sequence is partitioned into
+        :return: True | False if the test passed or failed
+        """
+        if block_sizes is None:
+            block_sizes = [8, 128, 10000]
