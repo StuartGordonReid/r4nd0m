@@ -6,6 +6,7 @@ import numpy
 import math
 import csv
 import os
+import random
 
 
 def setup_environment():
@@ -46,9 +47,18 @@ def construct_binary_frame(method, token):
         return binary_frame
 
 
+def get_strong_random_sequence(length):
+    rng = random.SystemRandom()
+    nrng = numpy.empty(length)
+    for x in range(length):
+        nrng[x] = rng.random() * 2.0 - 1.0
+    return nrng
+
+
 if __name__ == '__main__':
     print("\nTesting Mersenne Twister Using Unbiased Converter\n")
-    prng = numpy.random.uniform(low=-1.0, high=1.0, size=80000)
+    # prng = numpy.random.uniform(low=-1.0, high=1.0, size=80000)
+    prng = get_strong_random_sequence(80000)
     prng_data = pandas.DataFrame(numpy.array(prng))
     prng_data.columns = ["Mersenne"]
     prng_binary_frame = BinaryFrame(prng_data)

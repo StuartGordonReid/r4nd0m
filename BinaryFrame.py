@@ -27,7 +27,7 @@ class BinaryFrame:
             cbin_data = ""
             for i in range(len(self.data[c])):
                 if self.data[c][i] != 0.0:
-                    bin_r = bitstring.BitArray(float=self.data[c][i], length=64)
+                    bin_r = bitstring.BitArray(float=self.data[c][i], length=32)
                     bit_string = str(bin_r._getbin())
                     if bit_string[0] == '1':
                         bit_string = bit_string[1::]

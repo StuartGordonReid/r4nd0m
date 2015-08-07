@@ -1,5 +1,6 @@
 from BinaryFrame import BinaryFrame
 import scipy.special as spc
+import numpy.linalg as lng
 import numpy
 import math
 
@@ -71,6 +72,10 @@ class RandomnessTester:
                 self.fail_tests()
 
     def run_test_suite(self, block_size: int):
+        """
+        This method runs all of the tests included in the NIST test suite for randomness
+        :param block_size: the size of the blocks to look at
+        """
         for c in self.bin.columns:
             print("\t", Colours.Bold + "Running tests for", c + Colours.End)
             passed_values, p_values, str_data = [], [], self.bin.bin_data[c]
@@ -133,6 +138,9 @@ class RandomnessTester:
         return self.print_result("Monobit Test", column, p_val), p_val
 
     def test_monobit_test(self):
+        """
+        This is a test method for the monobit test method based on the example in the NIST documentation
+        """
         print(Colours.Bold + "\n\t Testing Monobit Test" + Colours.End)
         results, p_val = self.monobit_test(self.test_data, "Test Data")
         if (p_val - 0.109599) < self.epsilon:
@@ -175,6 +183,9 @@ class RandomnessTester:
         return self.print_result("Block Frequency Test", column, p_val), p_val
 
     def test_block_frequency_test(self):
+        """
+        This is a test method for the block frequency test method based on the example in the NIST documentation
+        """
         print(Colours.Bold + "\n\t Testing Block Frequency Test" + Colours.End)
         results, p_val = self.block_frequency_test(self.test_data, "Test Data", 3)
         if (p_val - 0.706438) < self.epsilon:
@@ -208,6 +219,9 @@ class RandomnessTester:
         return self.print_result("Runs Test", column, p_val), p_val
 
     def test_runs_test(self):
+        """
+        This is a test method for the runs test method based on the example in the NIST documentation
+        """
         print(Colours.Bold + "\n\t Testing Runs Test" + Colours.End)
         results, p_val = self.runs_test(self.test_data, "Test Data")
         if (p_val - 0.500798) < self.epsilon:
@@ -216,6 +230,13 @@ class RandomnessTester:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
     def longest_runs_test(self,  str_data: str, column: str, block_size: int):
+        """
+        This method calls the longest_run_test method with different parameters as per the NIST documentation
+        :param str_data: this is the bit string being tested.
+        :param column: this is the name of the bit string being tested.
+        :param block_size: the size of the blocks that the binary sequence is partitioned into
+        :return: True | False if the test passed or failed
+        """
         if block_size == 8:
             m, k, piks = 3, 16, [0.2148, 0.3672, 0.2305, 0.1875]
             return self.longest_run_test(str_data, column, piks, m, k, block_size)
@@ -273,15 +294,25 @@ class RandomnessTester:
             p_val = spc.gammaincc(float(3/2), float(chi_squared/2))
             return self.print_result("Longest Run Test " + str(block_size) + " bits", column, p_val), p_val
         else:
-            return self.print_result("Longest Run Test " + str(block_size) + " bits", column, 2.0), 2.0
+            return self.print_result("Longest Run Test " + str(block_size) + " bits", column, 0.0), 0.0
 
     def test_longest_runs_test(self):
+        """
+        This is a test method for the longest run test method based on the example in the NIST documentation
+        """
         print(Colours.Bold + "\n\t Testing Longest Run Test" + Colours.End)
         results, p_val = self.longest_runs_test(self.test_data_8, "Test Data", 8)
         if (p_val - 0.180609) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+
+    def get_binary_matrix_rank(self, m, q):
+        """
+
+        :return:
+        """
+        print(lng.matrix_rank(m))
 
 
 if __name__ == '__main__':
@@ -290,3 +321,9 @@ if __name__ == '__main__':
     rng_tester.test_block_frequency_test()
     rng_tester.test_runs_test()
     rng_tester.test_longest_runs_test()
+
+    matrix = numpy.matrix([[0, 1, 0], [1, 1, 0], [0, 1, 0]])
+    rng_tester.get_binary_matrix_rank(matrix, 3)
+
+    matrix = numpy.matrix([[0, 1, 0], [1, 0, 1], [0, 1, 1]])
+    rng_tester.get_binary_matrix_rank(matrix, 3)
