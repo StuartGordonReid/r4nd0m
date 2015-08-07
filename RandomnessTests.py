@@ -58,7 +58,7 @@ class RandomnessTester:
                 if block_frequency_result:
                     runs_result, p_val = self.runs_test(str_data, c)
                     if runs_result:
-                        longest_run_result, p_val = self.longest_run_test_8(str_data, c)
+                        longest_run_result, p_val = self.longest_runs_test(str_data, c, 8)
                         if longest_run_result:
                             self.pass_tests()
                         else:
@@ -87,7 +87,15 @@ class RandomnessTester:
             passed_values.append(passed)
             p_values.append(p_val)
 
-            passed, p_val = self.longest_run_test_8(str_data, c)
+            passed, p_val = self.longest_runs_test(str_data, c, 8)
+            passed_values.append(passed)
+            p_values.append(p_val)
+
+            passed, p_val = self.longest_runs_test(str_data, c, 128)
+            passed_values.append(passed)
+            p_values.append(p_val)
+
+            passed, p_val = self.longest_runs_test(str_data, c, 10000)
             passed_values.append(passed)
             p_values.append(p_val)
 
@@ -207,7 +215,22 @@ class RandomnessTester:
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def longest_run_test_8(self, str_data: str, column: str, block_size=8):
+    def longest_runs_test(self,  str_data: str, column: str, block_size: int):
+        if block_size == 8:
+            m, k, piks = 3, 16, [0.2148, 0.3672, 0.2305, 0.1875]
+            return self.longest_run_test(str_data, column, piks, m, k, block_size)
+        elif block_size == 128:
+            m, k, piks = 5, 49, [0.1174, 0.2430, 0.2493, 0.1752, 0.1027, 0.1124]
+            return self.longest_run_test(str_data, column, piks, m, k, block_size)
+        elif block_size == 10000:
+            m, k, piks = 6, 75, [0.0882, 0.2092, 0.2483, 0.1933, 0.1208, 0.0675, 0.0727]
+            return self.longest_run_test(str_data, column, piks, m, k, block_size)
+        else:
+            print("Unsupported block size, defaulting to 128-bits")
+            m, k, piks = 5, 49, [0.1174, 0.2430, 0.2493, 0.1752, 0.1027, 0.1124]
+            return self.longest_run_test(str_data, column, piks, m, k, block_size)
+
+    def longest_run_test(self, str_data: str, column: str, pik_values: list, m: int, k: int, block_size: int):
         """
         **From the NIST documentation**
         The focus of the tests is the longest run of ones within M-bit blocks. The purpose of this tests is to determine
@@ -222,10 +245,10 @@ class RandomnessTester:
         # Check if there is enough data to run the test
         if len(str_data) > block_size:
             # Work out the number of blocks, discard the remainder
-            pik = [0.2148, 0.3672, 0.2305, 0.1875]
+            # pik = [0.2148, 0.3672, 0.2305, 0.1875]
             num_blocks = int(len(str_data) / block_size)
             block_start, block_end = 0, block_size
-            frequencies = numpy.zeros(4)
+            frequencies = numpy.zeros(m + 1)
             for i in range(num_blocks):
                 # Slice the binary string into a block
                 block_data = str_data[block_start:block_end]
@@ -240,21 +263,21 @@ class RandomnessTester:
                     else:
                         max_run_count = max(max_run_count, run_count)
                         run_count = 0
-                run_length = min(max_run_count - 1, 3)
+                run_length = min(max_run_count - 1, m)
                 frequencies[run_length] += 1
                 block_start += block_size
                 block_end += block_size
             chi_squared = 0
             for i in range(len(frequencies)):
-                chi_squared += (pow(frequencies[i] - (16 * pik[i]), 2.0))/(16 * pik[i])
+                chi_squared += (pow(frequencies[i] - (k * pik_values[i]), 2.0))/(k * pik_values[i])
             p_val = spc.gammaincc(float(3/2), float(chi_squared/2))
-            return self.print_result("Longest Run Test", column, p_val), p_val
+            return self.print_result("Longest Run Test " + str(block_size) + " bits", column, p_val), p_val
         else:
-            return self.print_result("Longest Run Test", column, 2.0), 2.0
+            return self.print_result("Longest Run Test " + str(block_size) + " bits", column, 2.0), 2.0
 
-    def test_longest_runs_test_8(self):
+    def test_longest_runs_test(self):
         print(Colours.Bold + "\n\t Testing Longest Run Test" + Colours.End)
-        results, p_val = self.longest_run_test_8(self.test_data_8, "Test Data")
+        results, p_val = self.longest_runs_test(self.test_data_8, "Test Data", 8)
         if (p_val - 0.180609) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
@@ -266,4 +289,4 @@ if __name__ == '__main__':
     rng_tester.test_monobit_test()
     rng_tester.test_block_frequency_test()
     rng_tester.test_runs_test()
-    rng_tester.test_longest_runs_test_8()
+    rng_tester.test_longest_runs_test()
