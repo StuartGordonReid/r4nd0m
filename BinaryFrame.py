@@ -49,10 +49,12 @@ class BinaryFrame:
         for c in self.data.columns:
             cbin_data = ""
             for i in range(len(self.data[c])):
-                if self.data[c][i] >= 0.0:
+                if self.data[c][i] > 0.0:
                     cbin_data += '1'
-                else:
+                if self.data[c][i] < 0.0:
                     cbin_data += '0'
+                else:
+                    cbin_data += '01'
             self.bin_data[c] = cbin_data
 
 
