@@ -17,8 +17,13 @@ class RandomnessTester:
         Initializes a randomness tester object for testing binary sequences for randomness
         :param bin: this is a "BinaryFrame" object which is a conversion of a pandas DataFrame into a binary dictionary
         """
-        assert isinstance(bin, BinaryFrame)
         self.bin = bin
+        self.epsilon = 0.0001
+        self.test_data = "11001001000011111101101010100010001000010110100011" \
+                         "00001000110100110001001100011001100010100010111000"
+        self.test_data_8 = "11001100000101010110110001001100111000000000001001" \
+                           "00110101010001000100111101011010000000110101111100" \
+                           "1100111001101101100010110010"
 
     def print_result(self, test_name, data_name, p_val, boundary=0.01):
         """
@@ -39,7 +44,7 @@ class RandomnessTester:
                   "p value =", '%.6f' % p_val + Colours.End)
             return True
 
-    def run_test_suite(self, block_size: int):
+    def run_test_suite_knockout(self, block_size: int):
         """
         This method runs all of the tests included in the NIST test suite for randomness
         :param block_size: the size of the blocks to look at
@@ -47,13 +52,13 @@ class RandomnessTester:
         for c in self.bin.columns:
             print("\t", Colours.Bold + "Running tests for", c + Colours.End)
             str_data = self.bin.bin_data[c]
-            monobit_result = self.monobit_test(str_data, c)
+            monobit_result, p_val = self.monobit_test(str_data, c)
             if monobit_result:
-                block_frequency_result = self.block_frequency_test(str_data, c, block_size)
+                block_frequency_result, p_val = self.block_frequency_test(str_data, c, block_size)
                 if block_frequency_result:
-                    runs_result = self.runs_test(str_data, c)
+                    runs_result, p_val = self.runs_test(str_data, c)
                     if runs_result:
-                        longest_run_result = self.longest_run_test(str_data, c, block_size)
+                        longest_run_result, p_val = self.longest_run_test_8(str_data, c)
                         if longest_run_result:
                             self.pass_tests()
                         else:
@@ -64,6 +69,32 @@ class RandomnessTester:
                     self.fail_tests()
             else:
                 self.fail_tests()
+
+    def run_test_suite(self, block_size: int):
+        for c in self.bin.columns:
+            print("\t", Colours.Bold + "Running tests for", c + Colours.End)
+            passed_values, p_values, str_data = [], [], self.bin.bin_data[c]
+
+            passed, p_val = self.monobit_test(str_data, c)
+            passed_values.append(passed)
+            p_values.append(p_val)
+
+            passed, p_val = self.block_frequency_test(str_data, c, block_size)
+            passed_values.append(passed)
+            p_values.append(p_val)
+
+            passed, p_val = self.runs_test(str_data, c)
+            passed_values.append(passed)
+            p_values.append(p_val)
+
+            passed, p_val = self.longest_run_test_8(str_data, c)
+            passed_values.append(passed)
+            p_values.append(p_val)
+
+            if False in passed_values:
+                self.fail_tests()
+            else:
+                self.pass_tests()
 
     def fail_tests(self):
         print("\t", Colours.Bold + "Failing all subsequent tests" + Colours.End)
@@ -91,7 +122,15 @@ class RandomnessTester:
         # Calculate the p value
         sobs = count / math.sqrt(len(str_data))
         p_val = spc.erfc(math.fabs(sobs) / math.sqrt(2))
-        return self.print_result("Monobit Test", column, p_val)
+        return self.print_result("Monobit Test", column, p_val), p_val
+
+    def test_monobit_test(self):
+        print(Colours.Bold + "\n\t Testing Monobit Test" + Colours.End)
+        results, p_val = self.monobit_test(self.test_data, "Test Data")
+        if (p_val - 0.109599) < self.epsilon:
+            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
+        else:
+            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
     def block_frequency_test(self, str_data: str, column: str, block_size: int):
         """
@@ -124,8 +163,16 @@ class RandomnessTester:
         # Calculate the p-value
         chi = (proportions - 0.5) ** 2
         stat = 4 * block_size * numpy.sum(chi)
-        p_val = spc.gammainc(num_blocks / 2, stat / 2)
-        return self.print_result("Block Frequency Test", column, p_val)
+        p_val = spc.gammaincc(num_blocks / 2, stat / 2)
+        return self.print_result("Block Frequency Test", column, p_val), p_val
+
+    def test_block_frequency_test(self):
+        print(Colours.Bold + "\n\t Testing Block Frequency Test" + Colours.End)
+        results, p_val = self.block_frequency_test(self.test_data, "Test Data", 3)
+        if (p_val - 0.706438) < self.epsilon:
+            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
+        else:
+            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
     def runs_test(self, str_data: str, column: str):
         """
@@ -143,16 +190,24 @@ class RandomnessTester:
         for char in str_data:
             if char == '1':
                 ones_count += 1
-        proportion, vobs = float(ones_count / n), 0
-        for i in range(n - 2):
+        proportion, vobs = float(ones_count / n), 1
+        for i in range(n - 1):
             if str_data[i] != str_data[i + 1]:
                 vobs += 1
         num = (vobs - (2 * n * proportion * (1 - proportion)))
         den = (2 * math.sqrt(2 * n) * proportion * (1 - proportion))
         p_val = spc.erfc(num/den)
-        return self.print_result("Runs Test", column, p_val)
+        return self.print_result("Runs Test", column, p_val), p_val
 
-    def longest_run_test(self, str_data: str, column: str, block_sizes=None):
+    def test_runs_test(self):
+        print(Colours.Bold + "\n\t Testing Runs Test" + Colours.End)
+        results, p_val = self.runs_test(self.test_data, "Test Data")
+        if (p_val - 0.500798) < self.epsilon:
+            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
+        else:
+            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+
+    def longest_run_test_8(self, str_data: str, column: str, block_size=8):
         """
         **From the NIST documentation**
         The focus of the tests is the longest run of ones within M-bit blocks. The purpose of this tests is to determine
@@ -162,8 +217,53 @@ class RandomnessTester:
         est run of zeroes. Therefore, only one test is necessary for this statistical tests of randomness
         :param str_data: this is the bit string being tested.
         :param column: this is the name of the bit string being tested.
-        :param block_size: the size of the blocks that the binary sequence is partitioned into
         :return: True | False if the test passed or failed
         """
-        if block_sizes is None:
-            block_sizes = [8, 128, 10000]
+        # Check if there is enough data to run the test
+        if len(str_data) > block_size:
+            # Work out the number of blocks, discard the remainder
+            pik = [0.2148, 0.3672, 0.2305, 0.1875]
+            num_blocks = int(len(str_data) / block_size)
+            block_start, block_end = 0, block_size
+            frequencies = numpy.zeros(4)
+            for i in range(num_blocks):
+                # Slice the binary string into a block
+                block_data = str_data[block_start:block_end]
+                # Keep track of the number of ones
+                max_run_count, run_count = 0, 0
+                if block_data[0] == '1':
+                    run_count += 1
+                for i in range(1, block_size):
+                    if block_data[i] == '1':
+                        run_count += 1
+                        max_run_count = max(max_run_count, run_count)
+                    else:
+                        max_run_count = max(max_run_count, run_count)
+                        run_count = 0
+                run_length = min(max_run_count - 1, 3)
+                frequencies[run_length] += 1
+                block_start += block_size
+                block_end += block_size
+            chi_squared = 0
+            for i in range(len(frequencies)):
+                chi_squared += (pow(frequencies[i] - (16 * pik[i]), 2.0))/(16 * pik[i])
+            p_val = spc.gammaincc(float(3/2), float(chi_squared/2))
+            return self.print_result("Longest Run Test", column, p_val), p_val
+        else:
+            return self.print_result("Longest Run Test", column, 2.0), 2.0
+
+    def test_longest_runs_test_8(self):
+        print(Colours.Bold + "\n\t Testing Longest Run Test" + Colours.End)
+        results, p_val = self.longest_run_test_8(self.test_data_8, "Test Data")
+        if (p_val - 0.180609) < self.epsilon:
+            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
+        else:
+            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+
+
+if __name__ == '__main__':
+    rng_tester = RandomnessTester(None)
+    rng_tester.test_monobit_test()
+    rng_tester.test_block_frequency_test()
+    rng_tester.test_runs_test()
+    rng_tester.test_longest_runs_test_8()
