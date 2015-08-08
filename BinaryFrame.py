@@ -14,6 +14,32 @@ class BinaryFrame:
         self.bin_data = {}
         self.columns = self.data.columns
 
+    def convert_basis_points_unbiased(self, convert=True):
+        """
+
+        :return:
+        """
+        for c in self.data.columns:
+            cbin_data = ""
+            for i in range(len(self.data[c])):
+                if convert:
+                    el = int(self.data[c][i] * 100)
+                else:
+                    el = self.data[c][i]
+                cbin_data += self.to_binary_string(el)
+            self.bin_data[c] = cbin_data
+
+    def to_binary_string(self, x: int):
+        if x < 0:
+            bit_string = str(int(bin(x)[3:]))
+            bit_string = bit_string.replace('1', '2').replace('0', '1').replace('2', '0')
+            return bit_string
+        elif x > 0:
+            bit_string = str(int(bin(x)[2:]))
+            return bit_string
+        else:
+            return "01"
+
     def convert_unbiased(self):
         """
         A method for converting a floating point binary pandas DataFrame into a Dictionary of binary strings
@@ -86,5 +112,27 @@ def test_unbiased_conversion():
     print(bit_count)
 
 
+def test_bp_convert():
+    start = -1000
+    ones, zeros = 0, 0
+    for i in range(2001):
+        if start < 0:
+            bit_string = str(int(bin(start)[3:]))
+            bit_string = bit_string.replace('1', '2').replace('0', '1').replace('2', '0')
+        elif start > 0:
+            bit_string = str(int(bin(start)[2:]))
+        else:
+            bit_string = "01"
+        print(start, bit_string)
+        for c in bit_string:
+            if c == '1':
+                ones += 1
+            else:
+                zeros += 1
+        start += 1
+    print(ones, zeros)
+
+
 if __name__ == '__main__':
-    test_unbiased_conversion()
+    # test_unbiased_conversion()
+    test_bp_convert()

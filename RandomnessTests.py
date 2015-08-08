@@ -9,7 +9,7 @@ class Colours:
     """
     Just used to make the standard-out a little bit less ugly
     """
-    Pass, Fail, End, Bold, Info = '\033[92m', '\033[91m', '\033[0m', '\033[1m', '\033[94m'
+    Pass, Fail, End, Bold, Info, Italics = '\033[92m', '\033[91m', '\033[0m', '\033[1m', '\033[94m', '\x1B[3m'
 
 
 class RandomnessTester:
@@ -19,7 +19,7 @@ class RandomnessTester:
         :param bin: this is a "BinaryFrame" object which is a conversion of a pandas DataFrame into a binary dictionary
         """
         self.bin = bin
-        self.epsilon = 0.0001
+        self.epsilon = 0.000001
         self.test_data = "11001001000011111101101010100010001000010110100011" \
                          "00001000110100110001001100011001100010100010111000"
         self.test_data_8 = "11001100000101010110110001001100111000000000001001" \
@@ -45,40 +45,16 @@ class RandomnessTester:
                   "p value =", '%.6f' % p_val + Colours.End)
             return True
 
-    def run_test_suite_knockout(self, block_size: int):
-        """
-        This method runs all of the tests included in the NIST test suite for randomness
-        :param block_size: the size of the blocks to look at
-        """
-        for c in self.bin.columns:
-            print("\t", Colours.Bold + "Running tests for", c + Colours.End)
-            str_data = self.bin.bin_data[c]
-            monobit_result, p_val = self.monobit_test(str_data, c)
-            if monobit_result:
-                block_frequency_result, p_val = self.block_frequency_test(str_data, c, block_size)
-                if block_frequency_result:
-                    runs_result, p_val = self.runs_test(str_data, c)
-                    if runs_result:
-                        longest_run_result, p_val = self.longest_runs_test(str_data, c, 8)
-                        if longest_run_result:
-                            self.pass_tests()
-                        else:
-                            self.fail_tests()
-                    else:
-                        self.fail_tests()
-                else:
-                    self.fail_tests()
-            else:
-                self.fail_tests()
-
     def run_test_suite(self, block_size: int):
         """
         This method runs all of the tests included in the NIST test suite for randomness
         :param block_size: the size of the blocks to look at
         """
         for c in self.bin.columns:
-            print("\t", Colours.Bold + "Running tests for", c + Colours.End)
+            print("\n\t", Colours.Bold + "Running tests for", c + Colours.End)
             passed_values, p_values, str_data = [], [], self.bin.bin_data[c]
+
+            self.zeros_and_ones_count(str_data, c)
 
             passed, p_val = self.monobit_test(str_data, c)
             passed_values.append(passed)
@@ -110,10 +86,20 @@ class RandomnessTester:
                 self.pass_tests()
 
     def fail_tests(self):
-        print("\t", Colours.Bold + "Failing all subsequent tests" + Colours.End)
+        print("\t", Colours.Bold + "Failed to pass all randomness tests" + Colours.End)
 
     def pass_tests(self):
         print("\t", Colours.Bold + "Passed all randomness tests" + Colours.End)
+
+    def zeros_and_ones_count(self, str_data: str, column: str):
+        ones, zeros = 0, 0
+        # If the char is 0 minus 1, else add 1
+        for char in str_data:
+            if char == '0':
+                zeros += 1
+            else:
+                ones += 1
+        print("\t", Colours.Italics + "Count 1 =", ones, "Count 0 =", zeros, Colours.End)
 
     def monobit_test(self, str_data: str, column: str):
         """
@@ -209,14 +195,20 @@ class RandomnessTester:
         for char in str_data:
             if char == '1':
                 ones_count += 1
-        proportion, vobs = float(ones_count / n), 1
-        for i in range(n - 1):
-            if str_data[i] != str_data[i + 1]:
-                vobs += 1
-        num = (vobs - (2 * n * proportion * (1 - proportion)))
-        den = (2 * math.sqrt(2 * n) * proportion * (1 - proportion))
-        p_val = spc.erfc(num/den)
-        return self.print_result("Runs Test", column, p_val), p_val
+        p, vobs = float(ones_count / n), 1
+        tau = 2 / math.sqrt(len(str_data))
+        if abs(p - 0.5) > tau:
+            return self.print_result("Runs Test", column, 0.0), 0.0
+        else:
+            for i in range(n - 1):
+                if str_data[i] != str_data[i + 1]:
+                    vobs += 1
+            expected_runs = 1 + 2 * (n - 1) * 0.5 * 0.5
+            print("\t", Colours.Italics + "Observed runs =", vobs, "Expected runs", expected_runs, Colours.End)
+            num = abs(vobs - (2.0 * n * p * (1.0 - p)))
+            den = 2.0 * math.sqrt(2.0 * n) * p * (1.0 - p)
+            p_val = spc.erfc(float(num/den))
+            return self.print_result("Runs Test", column, p_val), p_val
 
     def test_runs_test(self):
         """

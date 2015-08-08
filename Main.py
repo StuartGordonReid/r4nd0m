@@ -39,7 +39,7 @@ def construct_binary_frame(method, token):
     data_frame_full = downloader.get_data_sets(my_arguments)
     if method == "convert":
         binary_frame = BinaryFrame(data_frame_full)
-        binary_frame.convert_unbiased()
+        binary_frame.convert_basis_points_unbiased()
         return binary_frame
     elif method == "discretize":
         binary_frame = BinaryFrame(data_frame_full)
@@ -55,24 +55,18 @@ def get_strong_random_sequence(length):
     return nrng
 
 
-if __name__ == '__main__':
-    print("\nTesting Mersenne Twister Using Unbiased Converter\n")
-    # prng = numpy.random.uniform(low=-1.0, high=1.0, size=80000)
-    prng = get_strong_random_sequence(80000)
+def conversion_run():
+    print("\nTesting Mersenne Twister")
+    prng = numpy.random.randint(low=-100, high=100, size=80000)
+    # prng = get_strong_random_sequence(80000)
     prng_data = pandas.DataFrame(numpy.array(prng))
     prng_data.columns = ["Mersenne"]
     prng_binary_frame = BinaryFrame(prng_data)
-    prng_binary_frame.convert_unbiased()
+    prng_binary_frame.convert_basis_points_unbiased(convert=False)
     rng_tester = RandomnessTester(prng_binary_frame)
     rng_tester.run_test_suite(6400)
 
-    print("\nTesting Mersenne Twister Using Discretization\n")
-    prng_binary_frame = BinaryFrame(prng_data)
-    prng_binary_frame.discretize()
-    rng_tester = RandomnessTester(prng_binary_frame)
-    rng_tester.run_test_suite(100)
-
-    print("\nTesting Deterministic Sequence Using Unbiased Converter\n")
+    print("\nTesting Deterministic Sequence")
     nrand = numpy.empty(80000)
     for i in range(80000):
         nrand[i] = (i % 10) / 10
@@ -80,23 +74,45 @@ if __name__ == '__main__':
     nrand_data = pandas.DataFrame(numpy.array(nrand))
     nrand_data.columns = ["Deterministic"]
     nrand_binary_frame = BinaryFrame(nrand_data)
-    nrand_binary_frame.convert_unbiased()
+    nrand_binary_frame.convert_basis_points_unbiased()
     rng_tester = RandomnessTester(nrand_binary_frame)
-    rng_tester.run_test_suite(6400)
+    rng_tester.run_test_suite(128)
 
-    print("\nTesting Deterministic Sequence Using Discretization\n")
-    nrand_binary_frame = BinaryFrame(nrand_data)
-    nrand_binary_frame.discretize()
-    rng_tester = RandomnessTester(nrand_binary_frame)
-    rng_tester.run_test_suite(100)
-
-    print("\nTesting Market Data Using Unbiased Converter\n")
+    print("\nTesting Market Data")
     t = setup_environment()
     my_binary_frame = construct_binary_frame("convert", t)
     rng_tester = RandomnessTester(my_binary_frame)
-    rng_tester.run_test_suite(6400)
+    rng_tester.run_test_suite(128)
 
-    print("\nTesting Market Data Using Discretization\n")
+
+def discretize_run():
+    print("\nTesting Mersenne Twister")
+    prng = numpy.random.randint(low=-100, high=100, size=80000)
+    # prng = get_strong_random_sequence(80000)
+    prng_data = pandas.DataFrame(numpy.array(prng))
+    prng_data.columns = ["Mersenne"]
+    prng_binary_frame = BinaryFrame(prng_data)
+    prng_binary_frame.discretize()
+    rng_tester = RandomnessTester(prng_binary_frame)
+    rng_tester.run_test_suite(128)
+
+    print("\nTesting Deterministic Sequence")
+    nrand = numpy.empty(80000)
+    for i in range(80000):
+        nrand[i] = (i % 10) / 10
+    nrand -= numpy.mean(nrand)
+    nrand_data = pandas.DataFrame(numpy.array(nrand))
+    nrand_data.columns = ["Deterministic"]
+    nrand_binary_frame = BinaryFrame(nrand_data)
+    nrand_binary_frame.discretize()
+    rng_tester = RandomnessTester(nrand_binary_frame)
+    rng_tester.run_test_suite(128)
+
+    print("\nTesting Market Data")
     my_binary_frame = construct_binary_frame("discretize", t)
     rng_tester = RandomnessTester(my_binary_frame)
-    rng_tester.run_test_suite(100)
+    rng_tester.run_test_suite(128)
+
+
+if __name__ == '__main__':
+    conversion_run()
