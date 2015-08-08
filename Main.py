@@ -6,7 +6,8 @@ import numpy
 import math
 import csv
 import os
-import random
+import random as sysrandom
+from Crypto.Random import random
 
 
 def setup_environment():
@@ -47,24 +48,34 @@ def construct_binary_frame(method, token):
         return binary_frame
 
 
-def get_strong_random_sequence(length):
-    rng = random.SystemRandom()
-    nrng = numpy.empty(length)
+def numpy_random(length):
+    return numpy.random.randint(low=-250, high=250, size=length)
+
+
+def system_random(length):
+    rng = sysrandom.SystemRandom()
+    nrng = []
     for x in range(length):
-        nrng[x] = rng.random() * 2.0 - 1.0
+        nrng.append(rng.randint(-250, 250))
     return nrng
 
 
-def conversion_run():
+def crypto_random(length):
+    nrng = []
+    for x in range(length):
+        nrng.append(random.randint(-250, 250))
+    return nrng
+
+
+def conversion_run(block_sizes, q_sizes):
     print("\nTesting Mersenne Twister")
-    prng = numpy.random.randint(low=-100, high=100, size=80000)
-    # prng = get_strong_random_sequence(80000)
+    prng = crypto_random(80000)
     prng_data = pandas.DataFrame(numpy.array(prng))
     prng_data.columns = ["Mersenne"]
     prng_binary_frame = BinaryFrame(prng_data)
     prng_binary_frame.convert_basis_points_unbiased(convert=False)
     rng_tester = RandomnessTester(prng_binary_frame)
-    rng_tester.run_test_suite(6400)
+    rng_tester.run_test_suite(block_sizes, q_sizes)
 
     print("\nTesting Deterministic Sequence")
     nrand = numpy.empty(80000)
@@ -76,25 +87,24 @@ def conversion_run():
     nrand_binary_frame = BinaryFrame(nrand_data)
     nrand_binary_frame.convert_basis_points_unbiased()
     rng_tester = RandomnessTester(nrand_binary_frame)
-    rng_tester.run_test_suite(128)
+    rng_tester.run_test_suite(block_sizes, q_sizes)
 
     print("\nTesting Market Data")
     t = setup_environment()
     my_binary_frame = construct_binary_frame("convert", t)
     rng_tester = RandomnessTester(my_binary_frame)
-    rng_tester.run_test_suite(128)
+    rng_tester.run_test_suite(block_sizes, q_sizes)
 
 
-def discretize_run():
+def discretize_run(block_sizes, q_sizes):
     print("\nTesting Mersenne Twister")
-    prng = numpy.random.randint(low=-100, high=100, size=80000)
-    # prng = get_strong_random_sequence(80000)
+    prng = crypto_random(80000)
     prng_data = pandas.DataFrame(numpy.array(prng))
     prng_data.columns = ["Mersenne"]
     prng_binary_frame = BinaryFrame(prng_data)
     prng_binary_frame.discretize()
     rng_tester = RandomnessTester(prng_binary_frame)
-    rng_tester.run_test_suite(128)
+    rng_tester.run_test_suite(block_sizes, q_sizes)
 
     print("\nTesting Deterministic Sequence")
     nrand = numpy.empty(80000)
@@ -106,13 +116,18 @@ def discretize_run():
     nrand_binary_frame = BinaryFrame(nrand_data)
     nrand_binary_frame.discretize()
     rng_tester = RandomnessTester(nrand_binary_frame)
-    rng_tester.run_test_suite(128)
+    rng_tester.run_test_suite(block_sizes, q_sizes)
 
     print("\nTesting Market Data")
+    t = setup_environment()
     my_binary_frame = construct_binary_frame("discretize", t)
     rng_tester = RandomnessTester(my_binary_frame)
-    rng_tester.run_test_suite(128)
+    rng_tester.run_test_suite(block_sizes, q_sizes)
 
 
 if __name__ == '__main__':
-    conversion_run()
+    my_block_sizes = [8, 16, 64, 128, 256, 512, 1024]
+    my_q_sizes = [2, 4, 8, 16, 32, 64]
+    conversion_run(my_block_sizes, my_q_sizes)
+    # discretize_run(my_block_sizes, my_q_sizes)
+

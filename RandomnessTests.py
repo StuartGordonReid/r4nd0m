@@ -25,6 +25,7 @@ class RandomnessTester:
         self.test_data_8 = "11001100000101010110110001001100111000000000001001" \
                            "00110101010001000100111101011010000000110101111100" \
                            "1100111001101101100010110010"
+        self.test_data_rank = "01011001001010101101"
 
     def print_result(self, test_name, data_name, p_val, boundary=0.01):
         """
@@ -45,7 +46,7 @@ class RandomnessTester:
                   "p value =", '%.6f' % p_val + Colours.End)
             return True
 
-    def run_test_suite(self, block_size: int):
+    def run_test_suite(self, block_sizes: list, q_sizes: list):
         """
         This method runs all of the tests included in the NIST test suite for randomness
         :param block_size: the size of the blocks to look at
@@ -60,9 +61,10 @@ class RandomnessTester:
             passed_values.append(passed)
             p_values.append(p_val)
 
-            passed, p_val = self.block_frequency_test(str_data, c, block_size)
-            passed_values.append(passed)
-            p_values.append(p_val)
+            for block_size in block_sizes:
+                passed, p_val = self.block_frequency_test(str_data, c, block_size)
+                passed_values.append(passed)
+                p_values.append(p_val)
 
             passed, p_val = self.runs_test(str_data, c)
             passed_values.append(passed)
@@ -80,9 +82,10 @@ class RandomnessTester:
             passed_values.append(passed)
             p_values.append(p_val)
 
-            passed, p_val = self.binary_matrix_rank_test(str_data, c, q=16)
-            passed_values.append(passed)
-            p_values.append(p_val)
+            for q_size in q_sizes:
+                passed, p_val = self.binary_matrix_rank_test(str_data, c, q_size)
+                passed_values.append(passed)
+                p_values.append(p_val)
 
             if False in passed_values:
                 self.fail_tests()
@@ -170,7 +173,7 @@ class RandomnessTester:
         chi = (proportions - 0.5) ** 2
         stat = 4 * block_size * numpy.sum(chi)
         p_val = spc.gammaincc(num_blocks / 2, stat / 2)
-        return self.print_result("Block Frequency Test", column, p_val), p_val
+        return self.print_result("Block Frequency Test " + str(block_size) + " bits", column, p_val), p_val
 
     def test_block_frequency_test(self):
         """
@@ -338,9 +341,9 @@ class RandomnessTester:
         """
         This is a test method for the binary matrix rank test based on the example in the NIST documentation
         """
-        print(Colours.Bold + "\n\t Testing Longest Run Test" + Colours.End)
-        results, p_val = self.longest_runs_test(self.test_data_8, "Test Data", 8)
-        if (p_val - 0.180609) < self.epsilon:
+        print(Colours.Bold + "\n\t Binary Matrix Rank Test" + Colours.End)
+        results, p_val = self.binary_matrix_rank_test(self.test_data_rank, "Test Data", 3)
+        if (p_val - 0.741948) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
@@ -352,3 +355,4 @@ if __name__ == '__main__':
     rng_tester.test_block_frequency_test()
     rng_tester.test_runs_test()
     rng_tester.test_longest_runs_test()
+    rng_tester.test_binary_matrix_rank_test()
