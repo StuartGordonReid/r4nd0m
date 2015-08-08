@@ -293,6 +293,7 @@ class RandomnessTester:
             p_val = spc.gammaincc(float(3/2), float(chi_squared/2))
             return self.print_result("Longest Run Test " + str(block_size) + " bits", column, p_val), p_val
         else:
+            print("\t", "Not enough data")
             return self.print_result("Longest Run Test " + str(block_size) + " bits", column, 0.0), 0.0
 
     def test_longest_runs_test(self):
@@ -307,35 +308,45 @@ class RandomnessTester:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
     def binary_matrix_rank_test(self, str_data: str, column: str, q: int):
+        """
+        **From the NIST documentation**
+        The focus of the test is the rank of disjoint sub-matrices of the entire sequence. The purpose of this test is
+        to check for linear dependence among fixed length sub strings of the original sequence. Note that this test
+        also appears in the DIEHARD battery of tests [7].
+        """
         shape = (q, q)
         n = len(str_data)
         block_size = q * q
         block_start, block_end = 0, block_size
-        num_m = math.floor(len(str_data) / (q * q))
-        max_ranks = [0, 0, 0]
-        for im in range(num_m):
-            block_data = str_data[block_start:block_end]
-            block = numpy.zeros(len(block_data))
-            for i in range(len(block_data)):
-                if block_data[i] == '1':
-                    block[i] = 1.0
-            m = block.reshape(shape)
-            rank = lng.matrix_rank(m)
-            if rank == q:
-                max_ranks[0] += 1
-            elif rank == (q - 1):
-                max_ranks[1] += 1
-            else:
-                max_ranks[2] += 1
-            # Update index trackers
-            block_start += block_size
-            block_end += block_size
-        chi = 0.0
-        piks = [0.2888, 0.5776, 0.1336]
-        for i in range(len(piks)):
-            chi += pow((max_ranks[i] - (piks[i] * num_m)), 2.0) / (piks[i] * num_m)
-        p_val = math.exp(-chi/2)
-        return self.print_result("Binary Matrix Rank Test " + str(q) + " bits", column, p_val), p_val
+        num_m = math.floor(n / (q * q))
+        if num_m > 0:
+            max_ranks = [0, 0, 0]
+            for im in range(num_m):
+                block_data = str_data[block_start:block_end]
+                block = numpy.zeros(len(block_data))
+                for i in range(len(block_data)):
+                    if block_data[i] == '1':
+                        block[i] = 1.0
+                m = block.reshape(shape)
+                rank = lng.matrix_rank(m)
+                if rank == q:
+                    max_ranks[0] += 1
+                elif rank == (q - 1):
+                    max_ranks[1] += 1
+                else:
+                    max_ranks[2] += 1
+                # Update index trackers
+                block_start += block_size
+                block_end += block_size
+            chi = 0.0
+            piks = [0.2888, 0.5776, 0.1336]
+            for i in range(len(piks)):
+                chi += pow((max_ranks[i] - (piks[i] * num_m)), 2.0) / (piks[i] * num_m)
+            p_val = math.exp(-chi/2)
+            return self.print_result("Binary Matrix Rank Test " + str(q) + " bits", column, p_val), p_val
+        else:
+            print("\t", "Not enough data")
+            return self.print_result("Binary Matrix Rank Test " + str(q) + " bits", column, 0.0), 0.0
 
     def test_binary_matrix_rank_test(self):
         """

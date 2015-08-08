@@ -16,29 +16,30 @@ class BinaryFrame:
 
     def convert_basis_points_unbiased(self, convert=True):
         """
-
+        A method for converting a floating point binary pandas DataFrame into a dictionary of binary strings
+        1) Convert floating points to basis points (integer) - unless convert == False
+        2) Convert integers into a binary string using the bin() method
+        3) If the integer was negative, flip the bits
+        4) Special case - if the floating point number is 0, then return an unbiased string
         :return:
         """
         for c in self.data.columns:
             cbin_data = ""
             for i in range(len(self.data[c])):
+                x = self.data[c][i]
                 if convert:
-                    el = int(self.data[c][i] * 100)
+                    x = int(self.data[c][i] * 100)
+                # Convert the integer into a binary string
+                if x < 0:
+                    bit_string = str(int(bin(x)[3:]))
+                    bit_string = bit_string.replace('1', '2').replace('0', '1').replace('2', '0')
+                elif x > 0:
+                    bit_string = str(int(bin(x)[2:]))
                 else:
-                    el = self.data[c][i]
-                cbin_data += self.to_binary_string(el)
+                    bit_string = '01'
+                # Add the binary string to the data
+                cbin_data += bit_string
             self.bin_data[c] = cbin_data
-
-    def to_binary_string(self, x: int):
-        if x < 0:
-            bit_string = str(int(bin(x)[3:]))
-            bit_string = bit_string.replace('1', '2').replace('0', '1').replace('2', '0')
-            return bit_string
-        elif x > 0:
-            bit_string = str(int(bin(x)[2:]))
-            return bit_string
-        else:
-            return "01"
 
     def convert_unbiased(self):
         """

@@ -48,6 +48,21 @@ def construct_binary_frame(method, token):
         return binary_frame
 
 
+def construct_long_binary_frame(method):
+    data = pandas.read_csv("S&P 500 History.csv")
+    assert isinstance(data, pandas.DataFrame)
+    data = data.set_index("Date")
+    data = data.drop("Close", axis=1)
+    if method == "convert":
+        binary_frame = BinaryFrame(data)
+        binary_frame.convert_basis_points_unbiased()
+        return binary_frame
+    elif method == "discretize":
+        binary_frame = BinaryFrame(data)
+        binary_frame.discretize()
+        return binary_frame
+
+
 def numpy_random(length):
     return numpy.random.randint(low=-250, high=250, size=length)
 
@@ -91,7 +106,8 @@ def conversion_run(block_sizes, q_sizes):
 
     print("\nTesting Market Data")
     t = setup_environment()
-    my_binary_frame = construct_binary_frame("convert", t)
+    # my_binary_frame = construct_binary_frame("convert", t)
+    my_binary_frame = construct_long_binary_frame("convert")
     rng_tester = RandomnessTester(my_binary_frame)
     rng_tester.run_test_suite(block_sizes, q_sizes)
 
@@ -120,7 +136,8 @@ def discretize_run(block_sizes, q_sizes):
 
     print("\nTesting Market Data")
     t = setup_environment()
-    my_binary_frame = construct_binary_frame("discretize", t)
+    # my_binary_frame = construct_binary_frame("discretize", t)
+    my_binary_frame = construct_long_binary_frame("convert")
     rng_tester = RandomnessTester(my_binary_frame)
     rng_tester.run_test_suite(block_sizes, q_sizes)
 
