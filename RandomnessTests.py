@@ -80,6 +80,10 @@ class RandomnessTester:
             passed_values.append(passed)
             p_values.append(p_val)
 
+            passed, p_val = self.binary_matrix_rank_test(str_data, c, q=16)
+            passed_values.append(passed)
+            p_values.append(p_val)
+
             if False in passed_values:
                 self.fail_tests()
             else:
@@ -146,7 +150,7 @@ class RandomnessTester:
         :return: True | False if the test passed or failed
         """
         # Work out the number of blocks, discard the remainder
-        num_blocks = int(len(str_data) / block_size)
+        num_blocks = math.floor(len(str_data) / block_size)
         block_start, block_end = 0, block_size
         # Keep track of the proportion of ones per block
         proportions = numpy.zeros(num_blocks)
@@ -259,7 +263,7 @@ class RandomnessTester:
         if len(str_data) > block_size:
             # Work out the number of blocks, discard the remainder
             # pik = [0.2148, 0.3672, 0.2305, 0.1875]
-            num_blocks = int(len(str_data) / block_size)
+            num_blocks = math.floor(len(str_data) / block_size)
             block_start, block_end = 0, block_size
             frequencies = numpy.zeros(m + 1)
             for i in range(num_blocks):
@@ -299,12 +303,47 @@ class RandomnessTester:
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def get_binary_matrix_rank(self, m, q):
-        """
+    def binary_matrix_rank_test(self, str_data: str, column: str, q: int):
+        shape = (q, q)
+        n = len(str_data)
+        block_size = q * q
+        block_start, block_end = 0, block_size
+        num_m = math.floor(len(str_data) / (q * q))
+        max_ranks = [0, 0, 0]
+        for im in range(num_m):
+            block_data = str_data[block_start:block_end]
+            block = numpy.zeros(len(block_data))
+            for i in range(len(block_data)):
+                if block_data[i] == '1':
+                    block[i] = 1.0
+            m = block.reshape(shape)
+            rank = lng.matrix_rank(m)
+            if rank == q:
+                max_ranks[0] += 1
+            elif rank == (q - 1):
+                max_ranks[1] += 1
+            else:
+                max_ranks[2] += 1
+            # Update index trackers
+            block_start += block_size
+            block_end += block_size
+        chi = 0.0
+        piks = [0.2888, 0.5776, 0.1336]
+        for i in range(len(piks)):
+            chi += pow((max_ranks[i] - (piks[i] * num_m)), 2.0) / (piks[i] * num_m)
+        p_val = math.exp(-chi/2)
+        return self.print_result("Binary Matrix Rank Test " + str(q) + " bits", column, p_val), p_val
 
-        :return:
+    def test_binary_matrix_rank_test(self):
         """
-        print(lng.matrix_rank(m))
+        This is a test method for the binary matrix rank test based on the example in the NIST documentation
+        """
+        print(Colours.Bold + "\n\t Testing Longest Run Test" + Colours.End)
+        results, p_val = self.longest_runs_test(self.test_data_8, "Test Data", 8)
+        if (p_val - 0.180609) < self.epsilon:
+            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
+        else:
+            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
 
 if __name__ == '__main__':
@@ -313,9 +352,3 @@ if __name__ == '__main__':
     rng_tester.test_block_frequency_test()
     rng_tester.test_runs_test()
     rng_tester.test_longest_runs_test()
-
-    matrix = numpy.matrix([[0, 1, 0], [1, 1, 0], [0, 1, 0]])
-    rng_tester.get_binary_matrix_rank(matrix, 3)
-
-    matrix = numpy.matrix([[0, 1, 0], [1, 0, 1], [0, 1, 1]])
-    rng_tester.get_binary_matrix_rank(matrix, 3)
