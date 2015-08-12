@@ -3,7 +3,6 @@ from RandomnessTests import RandomnessTester
 from BinaryFrame import BinaryFrame
 import pandas
 import numpy
-import math
 import csv
 import os
 import random as sysrandom
@@ -27,9 +26,12 @@ def setup_environment():
     return token
 
 
-def construct_binary_frame(method, token):
+def construct_binary_frame(method, token, stream_size):
     downloader = QuandlInterface(token)
-    data_sets = ["INDEX_GSPC", "FUND_NASDX", "INDEX_SSEC", "INDEX_N225"]
+    data_sets = ["INDEX_GSPC",
+                 "FUND_NASDX",
+                 "INDEX_SSEC",
+                 "INDEX_N225"]
     data_prefix = "YAHOO/"
     transform = "rdiff"
     start_date = "2000-01-01"
@@ -38,29 +40,19 @@ def construct_binary_frame(method, token):
     for ds in data_sets:
         my_arguments.append(Argument(ds, start_date, end_date, data_prefix, None, transform))
     data_frame_full = downloader.get_data_sets(my_arguments)
-    if method == "convert":
-        binary_frame = BinaryFrame(data_frame_full)
-        binary_frame.convert_basis_points_unbiased()
-        return binary_frame
-    elif method == "discretize":
-        binary_frame = BinaryFrame(data_frame_full)
-        binary_frame.discretize()
-        return binary_frame
+    binary_frame = BinaryFrame(data_frame_full, stream_size)
+    binary_frame.convert(method)
+    return binary_frame
 
 
-def construct_long_binary_frame(method):
+def construct_long_binary_frame(method, stream_size):
     data = pandas.read_csv("S&P 500 History.csv")
     assert isinstance(data, pandas.DataFrame)
     data = data.set_index("Date")
     data = data.drop("Close", axis=1)
-    if method == "convert":
-        binary_frame = BinaryFrame(data)
-        binary_frame.convert_basis_points_unbiased()
-        return binary_frame
-    elif method == "discretize":
-        binary_frame = BinaryFrame(data)
-        binary_frame.discretize()
-        return binary_frame
+    binary_frame = BinaryFrame(data, stream_size)
+    binary_frame.convert(method)
+    return binary_frame
 
 
 def numpy_random(length):
@@ -82,69 +74,37 @@ def crypto_random(length):
     return nrng
 
 
-def conversion_run(block_sizes, q_sizes):
-    print("\nTesting Mersenne Twister")
-    prng = crypto_random(80000)
-    prng_data = pandas.DataFrame(numpy.array(prng))
-    prng_data.columns = ["Mersenne"]
-    prng_binary_frame = BinaryFrame(prng_data)
-    prng_binary_frame.convert_basis_points_unbiased(convert=False)
-    rng_tester = RandomnessTester(prng_binary_frame)
-    rng_tester.run_test_suite(block_sizes, q_sizes)
+def run_experiments(block_sizes, q_sizes, length, stream_length, methods):
+    for method in methods:
+        prng = numpy_random(length)
+        prng_data = pandas.DataFrame(numpy.array(prng))
+        prng_data.columns = ["Mersenne"]
+        prng_binary_frame = BinaryFrame(prng_data, stream_length)
+        prng_binary_frame.convert(method, convert=False)
+        rng_tester = RandomnessTester(prng_binary_frame)
+        rng_tester.run_test_suite(block_sizes, q_sizes)
 
-    print("\nTesting Deterministic Sequence")
-    nrand = numpy.empty(80000)
-    for i in range(80000):
-        nrand[i] = (i % 10) / 10
-    nrand -= numpy.mean(nrand)
-    nrand_data = pandas.DataFrame(numpy.array(nrand))
-    nrand_data.columns = ["Deterministic"]
-    nrand_binary_frame = BinaryFrame(nrand_data)
-    nrand_binary_frame.convert_basis_points_unbiased()
-    rng_tester = RandomnessTester(nrand_binary_frame)
-    rng_tester.run_test_suite(block_sizes, q_sizes)
+        nrand = numpy.empty(length)
+        for i in range(length):
+            nrand[i] = (i % 10) / 10
+        nrand -= numpy.mean(nrand)
+        nrand_data = pandas.DataFrame(numpy.array(nrand))
+        nrand_data.columns = ["Deterministic"]
+        nrand_binary_frame = BinaryFrame(nrand_data, stream_length)
+        nrand_binary_frame.convert(method)
+        rng_tester = RandomnessTester(nrand_binary_frame)
+        rng_tester.run_test_suite(block_sizes, q_sizes)
 
-    print("\nTesting Market Data")
-    t = setup_environment()
-    # my_binary_frame = construct_binary_frame("convert", t)
-    my_binary_frame = construct_long_binary_frame("convert")
-    rng_tester = RandomnessTester(my_binary_frame)
-    rng_tester.run_test_suite(block_sizes, q_sizes)
-
-
-def discretize_run(block_sizes, q_sizes):
-    print("\nTesting Mersenne Twister")
-    prng = crypto_random(80000)
-    prng_data = pandas.DataFrame(numpy.array(prng))
-    prng_data.columns = ["Mersenne"]
-    prng_binary_frame = BinaryFrame(prng_data)
-    prng_binary_frame.discretize()
-    rng_tester = RandomnessTester(prng_binary_frame)
-    rng_tester.run_test_suite(block_sizes, q_sizes)
-
-    print("\nTesting Deterministic Sequence")
-    nrand = numpy.empty(80000)
-    for i in range(80000):
-        nrand[i] = (i % 10) / 10
-    nrand -= numpy.mean(nrand)
-    nrand_data = pandas.DataFrame(numpy.array(nrand))
-    nrand_data.columns = ["Deterministic"]
-    nrand_binary_frame = BinaryFrame(nrand_data)
-    nrand_binary_frame.discretize()
-    rng_tester = RandomnessTester(nrand_binary_frame)
-    rng_tester.run_test_suite(block_sizes, q_sizes)
-
-    print("\nTesting Market Data")
-    t = setup_environment()
-    # my_binary_frame = construct_binary_frame("discretize", t)
-    my_binary_frame = construct_long_binary_frame("convert")
-    rng_tester = RandomnessTester(my_binary_frame)
-    rng_tester.run_test_suite(block_sizes, q_sizes)
+        # t = setup_environment()
+        # my_binary_frame = construct_binary_frame("discretize", t)
+        my_binary_frame = construct_long_binary_frame(method, stream_length)
+        rng_tester = RandomnessTester(my_binary_frame)
+        rng_tester.run_test_suite(block_sizes, q_sizes)
 
 
 if __name__ == '__main__':
-    my_block_sizes = [8, 16, 64, 128, 256, 512, 1024]
-    my_q_sizes = [2, 4, 8, 16, 32, 64]
-    conversion_run(my_block_sizes, my_q_sizes)
-    # discretize_run(my_block_sizes, my_q_sizes)
+    m = ["discretize",
+         "convert basis point",
+         "convert floating point"]
+    run_experiments(128, 32, 1024*10, 2048, m)
 
