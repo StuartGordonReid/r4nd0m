@@ -45,6 +45,7 @@ class BinaryFrame:
                     bstring += bit
                 cbin_data.append(bstring)
             self.bin_data[c] = cbin_data
+            # print(len(cbin_data) * self.stream_size)
 
     def discretize(self, fp):
         if fp > 0.0:

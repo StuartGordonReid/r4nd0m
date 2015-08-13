@@ -103,8 +103,9 @@ def run_experiments(block_sizes, q_sizes, length, stream_length, methods):
 
 
 if __name__ == '__main__':
-    m = ["discretize",
-         "convert basis point",
-         "convert floating point"]
-    run_experiments(128, 32, 1024*10, 2048, m)
+    # "discretize"
+    # "convert basis point"
+    # "convert floating point"
+    m = ["discretize"]
+    run_experiments(128, 32, (1024*2)*55, 1024*2, m)
 

@@ -18,7 +18,8 @@ class RandomnessTester:
         :param bin: this is a "BinaryFrame" object which is a conversion of a pandas DataFrame into a binary dictionary
         """
         self.bin = bin
-        self.epsilon = 0.000001
+        self.condition = 0.001
+        self.epsilon = 0.00000000001
         self.test_data = "11001001000011111101101010100010001000010110100011" \
                          "00001000110100110001001100011001100010100010111000"
         self.test_data_8 = "11001100000101010110110001001100111000000000001001" \
@@ -26,26 +27,26 @@ class RandomnessTester:
                            "1100111001101101100010110010"
         self.test_data_rank = "01011001001010101101"
 
-    def print_result(self, test_name, data_name, p_val, boundary=0.01, print_out=False):
-        """
-        This method prints the result of the randomness tests contained in this object
-        :param test_name: the name of the test for randomness
-        :param data_name: the name of the data-set (binary string) being tested
-        :param p_val: the computer p-value from the test for randomness
-        :param boundary: the decision boundary for pass / fail
-        """
-        if p_val < boundary:
-            if print_out:
-                print("\t", Colours.Bold + Colours.Fail + data_name + "\tFAIL! \t" +
-                      Colours.End + Colours.Fail + test_name, ";",
-                      "p value =", '%.6f' % p_val + Colours.End)
-            return False
+    def get_string(self, p_val):
+        if p_val < self.condition:
+            return Colours.Fail + "{0:.5f}".format(p_val) + "\t" + Colours.End
         else:
-            if print_out:
-                print("\t", Colours.Bold + Colours.Pass + data_name + "\tPASS! \t" +
-                      Colours.End + Colours.Pass + test_name, ";",
-                      "p value =", '%.6f' % p_val + Colours.End)
-            return True
+            return Colours.Pass + "{0:.5f}".format(p_val) + "\t" + Colours.End
+
+    def get_aggregate_pval(self, pvals):
+        bin_counts = numpy.zeros(10)
+        for p in pvals:
+            pos = min(int(math.floor(p * 10)), 9)
+            bin_counts[pos] += 1
+        chi_squared = 0
+        expected_count = len(pvals) / 10
+        for bin_count in bin_counts:
+            chi_squared += pow(bin_count - expected_count, 2.0) / expected_count
+        return spc.gammaincc(9.0/2.0, chi_squared/2.0)
+
+    def get_aggregate_pass(self, pvals):
+        npvals = numpy.array(pvals)
+        return (npvals > self.condition).sum() / len(pvals)
 
     def run_test_suite(self, block_size, q_size):
         """
@@ -62,6 +63,12 @@ class RandomnessTester:
                           "\tLongest Runs Test",
                           "\tMatrix Rank Test"]
 
+            monobit_pvals = []
+            block_pvals = []
+            runs_pvals = []
+            long_pvals = []
+            matrix_pvals = []
+
             for i in range(len(test_names)):
                 length = len(test_names[i])
                 space = 40 - length
@@ -69,26 +76,57 @@ class RandomnessTester:
                 filler = filler.replace("0", " ")
                 test_names[i] += filler
 
+            pval_strings = ["", "", "", "", ""]
             for i in range(len(binary_strings)):
                 passed_values, p_values, str_data = [], [], binary_strings[i]
 
-                passed, p_val = self.monobit_test(str_data, c)
-                test_names[0] += "{0:.5f}".format(p_val) + "\t"
+                p_val = self.monobit_test(str_data)
+                pval_strings[0] += self.get_string(p_val)
+                monobit_pvals.append(p_val)
 
-                passed, p_val = self.block_frequency_test(str_data, c, block_size)
-                test_names[1] += "{0:.5f}".format(p_val) + "\t"
+                p_val = self.block_frequency_test(str_data, block_size)
+                pval_strings[1] += self.get_string(p_val)
+                block_pvals.append(p_val)
 
-                passed, p_val = self.runs_test(str_data, c)
-                test_names[2] += "{0:.5f}".format(p_val) + "\t"
+                p_val = self.runs_test(str_data)
+                pval_strings[2] += self.get_string(p_val)
+                runs_pvals.append(p_val)
 
-                passed, p_val = self.longest_runs_test(str_data, c)
-                test_names[3] += "{0:.5f}".format(p_val) + "\t"
+                p_val = self.longest_runs_test(str_data)
+                pval_strings[3] += self.get_string(p_val)
+                long_pvals.append(p_val)
 
-                passed, p_val = self.binary_matrix_rank_test(str_data, c, q_size)
-                test_names[4] += "{0:.5f}".format(p_val) + "\t"
+                p_val = self.binary_matrix_rank_test(str_data, q_size)
+                pval_strings[4] += self.get_string(p_val)
+                matrix_pvals.append(p_val)
 
-            for t in test_names:
-                print(t)
+            aggregate_pvals, aggregate_pass = [], []
+            for i in range(len(binary_strings)):
+                aggregate_pvals.append(self.get_aggregate_pval(monobit_pvals))
+                aggregate_pass.append(self.get_aggregate_pass(monobit_pvals))
+
+                aggregate_pvals.append(self.get_aggregate_pval(block_pvals))
+                aggregate_pass.append(self.get_aggregate_pass(block_pvals))
+
+                aggregate_pvals.append(self.get_aggregate_pval(runs_pvals))
+                aggregate_pass.append(self.get_aggregate_pass(runs_pvals))
+
+                aggregate_pvals.append(self.get_aggregate_pval(long_pvals))
+                aggregate_pass.append(self.get_aggregate_pass(long_pvals))
+
+                aggregate_pvals.append(self.get_aggregate_pval(matrix_pvals))
+                aggregate_pass.append(self.get_aggregate_pass(matrix_pvals))
+
+            for i in range(len(test_names)):
+                pass_string = pass_string = Colours.Fail + "FAIL!\t" + Colours.End
+                if aggregate_pass[i] > 0.96:
+                    pass_string = Colours.Pass + "PASS!\t" + Colours.End
+
+                pval_string = Colours.Bold + Colours.Fail + "p=" + "{0:.5f}".format(aggregate_pvals[i]) + "\t" + Colours.End
+                if aggregate_pvals[i] > self.condition:
+                    pval_string = Colours.Bold + Colours.Pass + "p=" + "{0:.5f}".format(aggregate_pvals[i]) + "\t" + Colours.End
+
+                print(test_names[i] + pass_string + pval_string + pval_strings[i])
 
     def fail_tests(self):
         print("\t", Colours.Bold + "Failed to pass all randomness tests" + Colours.End)
@@ -106,7 +144,7 @@ class RandomnessTester:
                 ones += 1
         print("\t", Colours.Italics + "Count 1 =", ones, "Count 0 =", zeros, Colours.End)
 
-    def monobit_test(self, str_data: str, column: str):
+    def monobit_test(self, str_data: str):
         """
         **From the NIST documentation**
         The focus of this test is the proportion of zeros and ones for the entire sequence. The purpose of this test is
@@ -126,20 +164,20 @@ class RandomnessTester:
         # Calculate the p value
         sobs = count / math.sqrt(len(str_data))
         p_val = spc.erfc(math.fabs(sobs) / math.sqrt(2))
-        return self.print_result("Monobit Test", column, p_val), p_val
+        return p_val
 
     def test_monobit_test(self):
         """
         This is a test method for the monobit test method based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Testing Monobit Test" + Colours.End)
-        results, p_val = self.monobit_test(self.test_data, "Test Data")
+        p_val = self.monobit_test(self.test_data)
         if (p_val - 0.109599) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def block_frequency_test(self, str_data: str, column: str, block_size: int):
+    def block_frequency_test(self, str_data: str, block_size: int):
         """
         **From the NIST documentation**
         The focus of this tests is the proportion of ones within M-bit blocks. The purpose of this tests is to determine
@@ -171,20 +209,20 @@ class RandomnessTester:
         # Calculate the p-value
         chi_squared = 4.0 * block_size * proportion_sum
         p_val = spc.gammaincc(num_blocks / 2, chi_squared / 2)
-        return self.print_result("Block Frequency Test " + str(block_size) + " bits", column, p_val), p_val
+        return p_val
 
     def test_block_frequency_test(self):
         """
         This is a test method for the block frequency test method based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Testing Block Frequency Test" + Colours.End)
-        results, p_val = self.block_frequency_test(self.test_data, "Test Data", 3)
+        p_val = self.block_frequency_test(self.test_data, 3)
         if (p_val - 0.706438) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def runs_test(self, str_data: str, column: str):
+    def runs_test(self, str_data: str):
         """
         **From the NIST documentation**
         The focus of this tests if the total number of runs in the sequences, where a run is an uninterrupted sequence
@@ -203,7 +241,7 @@ class RandomnessTester:
         p, vobs = float(ones_count / n), 1
         tau = 2 / math.sqrt(len(str_data))
         if abs(p - 0.5) > tau:
-            return self.print_result("Runs Test", column, 0.0), 0.0
+            return 0.0
         else:
             for i in range(n - 1):
                 if str_data[i] != str_data[i + 1]:
@@ -213,20 +251,20 @@ class RandomnessTester:
             num = abs(vobs - (2.0 * n * p * (1.0 - p)))
             den = 2.0 * math.sqrt(2.0 * n) * p * (1.0 - p)
             p_val = spc.erfc(float(num/den))
-            return self.print_result("Runs Test", column, p_val), p_val
+            return p_val
 
     def test_runs_test(self):
         """
         This is a test method for the runs test method based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Testing Runs Test" + Colours.End)
-        results, p_val = self.runs_test(self.test_data, "Test Data")
+        p_val = self.runs_test(self.test_data)
         if (p_val - 0.500798) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def longest_runs_test(self, str_data: str, column: str):
+    def longest_runs_test(self, str_data: str):
         """
         **From the NIST documentation**
         The focus of the tests is the longest run of ones within M-bit blocks. The purpose of this tests is to determine
@@ -240,61 +278,65 @@ class RandomnessTester:
         """
         if len(str_data) < 128:
             print("\t", "Not enough data to run test!")
-            return self.print_result("Longest Run Test", column, 0.0), 0.0
+            return 0.0 < self.condition, 0.0
         elif len(str_data) < 6272:
-            m, k = 3, 16
-            block_size = 8
+            k, m = 3, 8
+            v_values = [1, 2, 3, 4]
             pik_values = [0.21484375, 0.3671875, 0.23046875, 0.1875]
         elif len(str_data) < 75000:
-            m, k = 5, 49
-            block_size = 128
+            k, m = 5, 128
+            v_values = [4, 5, 6, 7, 8, 9]
             pik_values = [0.1174035788, 0.242955959, 0.249363483, 0.17517706, 0.102701071, 0.112398847]
         else:
-            m, k = 6, 75
-            block_size = 10000
+            k, m = 6, 10000
+            v_values = [10, 11, 12, 13, 14, 15, 16]
             pik_values = [0.0882, 0.2092, 0.2483, 0.1933, 0.1208, 0.0675, 0.0727]
 
         # Work out the number of blocks, discard the remainder
         # pik = [0.2148, 0.3672, 0.2305, 0.1875]
-        num_blocks = math.floor(len(str_data) / block_size)
-        block_start, block_end = 0, block_size
-        frequencies = numpy.zeros(m + 1)
+        num_blocks = math.floor(len(str_data) / m)
+        frequencies = numpy.zeros(k + 1)
+        block_start, block_end = 0, m
         for i in range(num_blocks):
             # Slice the binary string into a block
             block_data = str_data[block_start:block_end]
             # Keep track of the number of ones
             max_run_count, run_count = 0, 0
-            if block_data[0] == '1':
-                run_count += 1
-            for i in range(1, block_size):
-                if block_data[i] == '1':
+            for j in range(0, m):
+                if block_data[j] == '1':
                     run_count += 1
                     max_run_count = max(max_run_count, run_count)
                 else:
                     max_run_count = max(max_run_count, run_count)
                     run_count = 0
-            run_length = min(max_run_count - 1, m)
-            frequencies[run_length] += 1
-            block_start += block_size
-            block_end += block_size
+            if max_run_count < v_values[0]:
+                frequencies[0] += 1
+            for j in range(k):
+                if max_run_count == v_values[j]:
+                    frequencies[j] += 1
+            if max_run_count > v_values[k-1]:
+                frequencies[k] += 1
+            block_start += m
+            block_end += m
+        # print(frequencies)
         chi_squared = 0
         for i in range(len(frequencies)):
-            chi_squared += (pow(frequencies[i] - (k * pik_values[i]), 2.0))/(k * pik_values[i])
-        p_val = spc.gammaincc(float(3/2), float(chi_squared/2))
-        return self.print_result("Longest Run Test " + str(block_size) + " bits", column, p_val), p_val
+            chi_squared += (pow(frequencies[i] - (num_blocks * pik_values[i]), 2.0))/(num_blocks * pik_values[i])
+        p_val = spc.gammaincc(float(k/2), float(chi_squared/2))
+        return p_val
 
     def test_longest_runs_test(self):
         """
         This is a test method for the longest run test method based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Testing Longest Run Test" + Colours.End)
-        results, p_val = self.longest_runs_test(self.test_data_8, "Test Data")
+        p_val = self.longest_runs_test(self.test_data_8)
         if (p_val - 0.180609) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def binary_matrix_rank_test(self, str_data: str, column: str, q: int):
+    def binary_matrix_rank_test(self, str_data: str, q: int):
         """
         **From the NIST documentation**
         The focus of the test is the rank of disjoint sub-matrices of the entire sequence. The purpose of this test is
@@ -330,17 +372,17 @@ class RandomnessTester:
             for i in range(len(piks)):
                 chi += pow((max_ranks[i] - (piks[i] * num_m)), 2.0) / (piks[i] * num_m)
             p_val = math.exp(-chi/2)
-            return self.print_result("Binary Matrix Rank Test " + str(q) + " bits", column, p_val), p_val
+            return p_val
         else:
             print("\t", "Not enough data")
-            return self.print_result("Binary Matrix Rank Test " + str(q) + " bits", column, 0.0), 0.0
+            return 0.0
 
     def test_binary_matrix_rank_test(self):
         """
         This is a test method for the binary matrix rank test based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Binary Matrix Rank Test" + Colours.End)
-        results, p_val = self.binary_matrix_rank_test(self.test_data_rank, "Test Data", 3)
+        p_val = self.binary_matrix_rank_test(self.test_data_rank, 3)
         if (p_val - 0.741948) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
