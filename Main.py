@@ -116,5 +116,5 @@ if __name__ == '__main__':
     # "convert basis point"
     # "convert floating point"
     m = ["discretize"]
-    run_experiments(128, 16, (252*5)*55, 252*5, m)
+    run_experiments(128, 16, int((252*2.0)*55), int(252*2.0), m)
 
