@@ -50,9 +50,14 @@ def construct_long_binary_frame(method, stream_size):
     assert isinstance(data, pandas.DataFrame)
     data = data.set_index("Date")
     data = data.drop("Close", axis=1)
+    data = data.reindex(index=data.index[::-1])
     binary_frame = BinaryFrame(data, stream_size)
     binary_frame.convert(method)
     return binary_frame
+
+
+def numpy_float_random(length):
+    return numpy.random.uniform(low=0.0, high=1.0, size=length)
 
 
 def numpy_random(length):
@@ -76,12 +81,16 @@ def crypto_random(length):
 
 def run_experiments(block_sizes, q_sizes, length, stream_length, methods):
     for method in methods:
-        prng = numpy_random(length)
+        if method == "convert floating point":
+            prng = numpy_float_random(length)
+        else:
+            prng = numpy_random(length)
         prng_data = pandas.DataFrame(numpy.array(prng))
         prng_data.columns = ["Mersenne"]
         prng_binary_frame = BinaryFrame(prng_data, stream_length)
         prng_binary_frame.convert(method, convert=False)
-        rng_tester = RandomnessTester(prng_binary_frame)
+        # method, real_data, start_year, end_year, block_size
+        rng_tester = RandomnessTester(prng_binary_frame, method, False, 00, 00, 00)
         rng_tester.run_test_suite(block_sizes, q_sizes)
 
         nrand = numpy.empty(length)
@@ -91,14 +100,14 @@ def run_experiments(block_sizes, q_sizes, length, stream_length, methods):
         nrand_data = pandas.DataFrame(numpy.array(nrand))
         nrand_data.columns = ["Deterministic"]
         nrand_binary_frame = BinaryFrame(nrand_data, stream_length)
-        nrand_binary_frame.convert(method)
-        rng_tester = RandomnessTester(nrand_binary_frame)
+        nrand_binary_frame.convert(method, convert=False)
+        rng_tester = RandomnessTester(nrand_binary_frame, method, False, 00, 00, 00)
         rng_tester.run_test_suite(block_sizes, q_sizes)
 
         # t = setup_environment()
         # my_binary_frame = construct_binary_frame("discretize", t)
         my_binary_frame = construct_long_binary_frame(method, stream_length)
-        rng_tester = RandomnessTester(my_binary_frame)
+        rng_tester = RandomnessTester(my_binary_frame, method, True, 1950, 2015, stream_length)
         rng_tester.run_test_suite(block_sizes, q_sizes)
 
 
@@ -107,5 +116,5 @@ if __name__ == '__main__':
     # "convert basis point"
     # "convert floating point"
     m = ["discretize"]
-    run_experiments(128, 32, (1024*2)*55, 1024*2, m)
+    run_experiments(128, 16, (252*5)*55, 252*5, m)
 

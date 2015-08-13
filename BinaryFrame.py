@@ -35,7 +35,7 @@ class BinaryFrame:
                     if method == "discretize":
                         bit = self.discretize(self.data[c][index])
                     elif method == "convert basis point":
-                        bit = self.convert_basis_point(self.data[c][index])
+                        bit = self.convert_basis_point(self.data[c][index], convert)
                     elif method == "convert floating point":
                         bit = self.convert_floating_point(self.data[c][index])
                     else:
@@ -66,7 +66,7 @@ class BinaryFrame:
         else:
             return '01'
 
-    def convert_floating_point(self, fp, length=32):
+    def convert_floating_point(self, fp, length=64):
         bin_r = bitstring.BitArray(float=fp, length=length)
         bits = str(bin_r._getbin())[1:]
         if fp > 0.0:

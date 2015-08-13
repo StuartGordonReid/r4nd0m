@@ -12,11 +12,17 @@ class Colours:
 
 
 class RandomnessTester:
-    def __init__(self, bin):
+    def __init__(self, bin, method, real_data, start_year, end_year, block_size):
         """
         Initializes a randomness tester object for testing binary sequences for randomness
         :param bin: this is a "BinaryFrame" object which is a conversion of a pandas DataFrame into a binary dictionary
         """
+        self.method = method
+        self.real_data = real_data
+        self.start_year = start_year
+        self.end_year = end_year
+        self.block_size = block_size
+
         self.bin = bin
         self.condition = 0.001
         self.epsilon = 0.00000000001
@@ -28,10 +34,13 @@ class RandomnessTester:
         self.test_data_rank = "01011001001010101101"
 
     def get_string(self, p_val):
-        if p_val < self.condition:
-            return Colours.Fail + "{0:.5f}".format(p_val) + "\t" + Colours.End
+        if p_val >= 0:
+            if p_val < self.condition:
+                return Colours.Fail + "{0:.5f}".format(p_val) + "\t" + Colours.End
+            else:
+                return Colours.Pass + "{0:.5f}".format(p_val) + "\t" + Colours.End
         else:
-            return Colours.Pass + "{0:.5f}".format(p_val) + "\t" + Colours.End
+            return "{0:.4f}".format(p_val) + "\t" + Colours.End
 
     def get_aggregate_pval(self, pvals):
         bin_counts = numpy.zeros(10)
@@ -48,6 +57,17 @@ class RandomnessTester:
         npvals = numpy.array(pvals)
         return (npvals > self.condition).sum() / len(pvals)
 
+    def print_dates(self, blocks):
+        if self.real_data and self.method == "discretize":
+            filler = "".zfill(64)
+            string_out = filler.replace("0", " ")
+            step = (self.end_year - self.start_year) / blocks
+            dates = numpy.arange(start=self.start_year, stop=self.end_year, step=step)
+            for i in range(blocks):
+                start_string = str(int(dates[i]))
+                string_out += start_string + "\t"
+            print(string_out)
+
     def run_test_suite(self, block_size, q_size):
         """
         This method runs all of the tests included in the NIST test suite for randomness
@@ -63,11 +83,7 @@ class RandomnessTester:
                           "\tLongest Runs Test",
                           "\tMatrix Rank Test"]
 
-            monobit_pvals = []
-            block_pvals = []
-            runs_pvals = []
-            long_pvals = []
-            matrix_pvals = []
+            pvals = [[], [], [], [], []]
 
             for i in range(len(test_names)):
                 length = len(test_names[i])
@@ -82,49 +98,54 @@ class RandomnessTester:
 
                 p_val = self.monobit_test(str_data)
                 pval_strings[0] += self.get_string(p_val)
-                monobit_pvals.append(p_val)
+                pvals[0].append(p_val)
 
                 p_val = self.block_frequency_test(str_data, block_size)
                 pval_strings[1] += self.get_string(p_val)
-                block_pvals.append(p_val)
+                pvals[1].append(p_val)
 
                 p_val = self.runs_test(str_data)
                 pval_strings[2] += self.get_string(p_val)
-                runs_pvals.append(p_val)
+                pvals[2].append(p_val)
 
                 p_val = self.longest_runs_test(str_data)
                 pval_strings[3] += self.get_string(p_val)
-                long_pvals.append(p_val)
+                pvals[3].append(p_val)
 
                 p_val = self.binary_matrix_rank_test(str_data, q_size)
                 pval_strings[4] += self.get_string(p_val)
-                matrix_pvals.append(p_val)
+                pvals[4].append(p_val)
 
             aggregate_pvals, aggregate_pass = [], []
             for i in range(len(binary_strings)):
-                aggregate_pvals.append(self.get_aggregate_pval(monobit_pvals))
-                aggregate_pass.append(self.get_aggregate_pass(monobit_pvals))
+                aggregate_pvals.append(self.get_aggregate_pval(pvals[0]))
+                aggregate_pass.append(self.get_aggregate_pass(pvals[0]))
 
-                aggregate_pvals.append(self.get_aggregate_pval(block_pvals))
-                aggregate_pass.append(self.get_aggregate_pass(block_pvals))
+                aggregate_pvals.append(self.get_aggregate_pval(pvals[1]))
+                aggregate_pass.append(self.get_aggregate_pass(pvals[1]))
 
-                aggregate_pvals.append(self.get_aggregate_pval(runs_pvals))
-                aggregate_pass.append(self.get_aggregate_pass(runs_pvals))
+                aggregate_pvals.append(self.get_aggregate_pval(pvals[2]))
+                aggregate_pass.append(self.get_aggregate_pass(pvals[2]))
 
-                aggregate_pvals.append(self.get_aggregate_pval(long_pvals))
-                aggregate_pass.append(self.get_aggregate_pass(long_pvals))
+                aggregate_pvals.append(self.get_aggregate_pval(pvals[3]))
+                aggregate_pass.append(self.get_aggregate_pass(pvals[3]))
 
-                aggregate_pvals.append(self.get_aggregate_pval(matrix_pvals))
-                aggregate_pass.append(self.get_aggregate_pass(matrix_pvals))
+                aggregate_pvals.append(self.get_aggregate_pval(pvals[4]))
+                aggregate_pass.append(self.get_aggregate_pass(pvals[4]))
 
+            self.print_dates(len(binary_strings))
             for i in range(len(test_names)):
-                pass_string = pass_string = Colours.Fail + "FAIL!\t" + Colours.End
-                if aggregate_pass[i] > 0.96:
-                    pass_string = Colours.Pass + "PASS!\t" + Colours.End
+                pass_string = Colours.Bold + Colours.Fail + "FAIL!\t" + Colours.End
+                if aggregate_pass[i] >= 0.96:
+                    pass_string = Colours.Bold + Colours.Pass + "PASS!\t" + Colours.End
+                if (numpy.array(pvals[i]) == -1.0).sum() > 0:
+                    pass_string = Colours.Bold + "SKIP!\t" + Colours.End
 
                 pval_string = Colours.Bold + Colours.Fail + "p=" + "{0:.5f}".format(aggregate_pvals[i]) + "\t" + Colours.End
                 if aggregate_pvals[i] > self.condition:
                     pval_string = Colours.Bold + Colours.Pass + "p=" + "{0:.5f}".format(aggregate_pvals[i]) + "\t" + Colours.End
+                if (numpy.array(pvals[i]) == -1.0).sum() > 0:
+                    pval_string = "p=SKIPPED\t"
 
                 print(test_names[i] + pass_string + pval_string + pval_strings[i])
 
@@ -243,12 +264,12 @@ class RandomnessTester:
         if abs(p - 0.5) > tau:
             return 0.0
         else:
-            for i in range(n - 1):
-                if str_data[i] != str_data[i + 1]:
+            for i in range(1, n):
+                if str_data[i] != str_data[i-1]:
                     vobs += 1
             # expected_runs = 1 + 2 * (n - 1) * 0.5 * 0.5
             # print("\t", Colours.Italics + "Observed runs =", vobs, "Expected runs", expected_runs, Colours.End)
-            num = abs(vobs - (2.0 * n * p * (1.0 - p)))
+            num = abs(vobs - 2.0 * n * p * (1.0 - p))
             den = 2.0 * math.sqrt(2.0 * n) * p * (1.0 - p)
             p_val = spc.erfc(float(num/den))
             return p_val
@@ -374,8 +395,7 @@ class RandomnessTester:
             p_val = math.exp(-chi/2)
             return p_val
         else:
-            print("\t", "Not enough data")
-            return 0.0
+            return -1.0
 
     def test_binary_matrix_rank_test(self):
         """
