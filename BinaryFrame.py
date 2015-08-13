@@ -1,8 +1,7 @@
 import bitstring
-import pandas
-import numpy
 
-import matplotlib.pyplot as plt
+
+# TODO: Add more comments to this file
 
 
 class BinaryFrame:

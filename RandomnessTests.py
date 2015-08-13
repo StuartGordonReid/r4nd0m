@@ -4,6 +4,12 @@ import numpy
 import math
 
 
+# TODO: Add comments to this file
+# TODO: Turn "tests" into proper unit tests
+# TODO: Complete the rest of the Randomness Tests
+# TODO: Remove expensive 'partitioning approach' to blocks
+
+
 class Colours:
     """
     Just used to make the standard-out a little bit less ugly
@@ -17,21 +23,14 @@ class RandomnessTester:
         Initializes a randomness tester object for testing binary sequences for randomness
         :param bin: this is a "BinaryFrame" object which is a conversion of a pandas DataFrame into a binary dictionary
         """
+        self.bin = bin
         self.method = method
         self.real_data = real_data
         self.start_year = start_year
         self.end_year = end_year
         self.block_size = block_size
-
-        self.bin = bin
+        self.epsilon = 0.0000001
         self.condition = 0.001
-        self.epsilon = 0.00000000001
-        self.test_data = "11001001000011111101101010100010001000010110100011" \
-                         "00001000110100110001001100011001100010100010111000"
-        self.test_data_8 = "11001100000101010110110001001100111000000000001001" \
-                           "00110101010001000100111101011010000000110101111100" \
-                           "1100111001101101100010110010"
-        self.test_data_rank = "01011001001010101101"
 
     def get_string(self, p_val):
         if p_val >= 0:
@@ -83,8 +82,6 @@ class RandomnessTester:
                           "\tLongest Runs Test",
                           "\tMatrix Rank Test"]
 
-            pvals = [[], [], [], [], []]
-
             for i in range(len(test_names)):
                 length = len(test_names[i])
                 space = 40 - length
@@ -92,7 +89,9 @@ class RandomnessTester:
                 filler = filler.replace("0", " ")
                 test_names[i] += filler
 
+            pvals = [[], [], [], [], [], []]
             pval_strings = ["", "", "", "", ""]
+
             for i in range(len(binary_strings)):
                 passed_values, p_values, str_data = [], [], binary_strings[i]
 
@@ -155,6 +154,17 @@ class RandomnessTester:
     def pass_tests(self):
         print("\t", Colours.Bold + "Passed all randomness tests" + Colours.End)
 
+    def load_test_data(self, data_set):
+        try:
+            raw_data = ""
+            with open("TestData/" + data_set, 'r+') as data_set_file:
+                for line in data_set_file:
+                    raw_data += line.replace("\n", "").replace("\t", "").replace(" ", "")
+            return raw_data
+        except FileNotFoundError:
+            print("File not found", data_set, "exiting")
+            exit(0)
+
     def zeros_and_ones_count(self, str_data: str):
         ones, zeros = 0, 0
         # If the char is 0 minus 1, else add 1
@@ -192,7 +202,7 @@ class RandomnessTester:
         This is a test method for the monobit test method based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Testing Monobit Test" + Colours.End)
-        p_val = self.monobit_test(self.test_data)
+        p_val = self.monobit_test(self.load_test_data("test1"))
         if (p_val - 0.109599) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
@@ -237,7 +247,7 @@ class RandomnessTester:
         This is a test method for the block frequency test method based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Testing Block Frequency Test" + Colours.End)
-        p_val = self.block_frequency_test(self.test_data, 3)
+        p_val = self.block_frequency_test(self.load_test_data("test1"), 3)
         if (p_val - 0.706438) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
@@ -279,7 +289,7 @@ class RandomnessTester:
         This is a test method for the runs test method based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Testing Runs Test" + Colours.End)
-        p_val = self.runs_test(self.test_data)
+        p_val = self.runs_test(self.load_test_data("test1"))
         if (p_val - 0.500798) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
@@ -299,7 +309,7 @@ class RandomnessTester:
         """
         if len(str_data) < 128:
             print("\t", "Not enough data to run test!")
-            return 0.0 < self.condition, 0.0
+            return -1.0
         elif len(str_data) < 6272:
             k, m = 3, 8
             v_values = [1, 2, 3, 4]
@@ -330,6 +340,7 @@ class RandomnessTester:
                 else:
                     max_run_count = max(max_run_count, run_count)
                     run_count = 0
+            max_run_count = max(max_run_count, run_count)
             if max_run_count < v_values[0]:
                 frequencies[0] += 1
             for j in range(k):
@@ -351,7 +362,7 @@ class RandomnessTester:
         This is a test method for the longest run test method based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Testing Longest Run Test" + Colours.End)
-        p_val = self.longest_runs_test(self.test_data_8)
+        p_val = self.longest_runs_test(self.load_test_data("test2"))
         if (p_val - 0.180609) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
@@ -363,12 +374,14 @@ class RandomnessTester:
         The focus of the test is the rank of disjoint sub-matrices of the entire sequence. The purpose of this test is
         to check for linear dependence among fixed length sub strings of the original sequence. Note that this test
         also appears in the DIEHARD battery of tests [7].
+        :return: True | False if the test passed or failed
         """
         shape = (q, q)
         n = len(str_data)
-        block_size = q * q
-        block_start, block_end = 0, block_size
+        block_size = int(q * q)
         num_m = math.floor(n / (q * q))
+        block_start, block_end = 0, block_size
+
         if num_m > 0:
             max_ranks = [0, 0, 0]
             for im in range(num_m):
@@ -388,10 +401,23 @@ class RandomnessTester:
                 # Update index trackers
                 block_start += block_size
                 block_end += block_size
+
+            piks = [0.0, 0.0, 0.0]
+            prob, r = 1.0, q
+            for i in range(r-1):
+                prob *= ((1.0-pow(2, i-q))*(1.0-pow(2, i-q)))/(1.0-pow(2, i-r))
+            piks[0] = pow(2, r*(q+q-r)-q*q) * prob
+
+            prob, r = 1.0, q - 1
+            for i in range(r - 1):
+                prob *= ((1.0-pow(2, i-q))*(1.0-pow(2, i-q)))/(1.0-pow(2, i-r))
+            piks[1] = pow(2, r*(32+32-r)-32*32) * prob
+
+            piks[2] = 1.0 - piks[1] - piks[0]
+
             chi = 0.0
-            piks = [0.2888, 0.5776, 0.1336]
             for i in range(len(piks)):
-                chi += pow((max_ranks[i] - (piks[i] * num_m)), 2.0) / (piks[i] * num_m)
+                chi += pow((max_ranks[i] - piks[i] * num_m), 2.0) / (piks[i] * num_m)
             p_val = math.exp(-chi/2)
             return p_val
         else:
@@ -402,15 +428,17 @@ class RandomnessTester:
         This is a test method for the binary matrix rank test based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Binary Matrix Rank Test" + Colours.End)
-        p_val = self.binary_matrix_rank_test(self.test_data_rank, 3)
-        if (p_val - 0.741948) < self.epsilon:
+        p_val = self.binary_matrix_rank_test(self.load_test_data("e")[:100000], 32)
+        if (p_val - 0.532069) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
 
 if __name__ == '__main__':
-    rng_tester = RandomnessTester(None)
+    # bin, method, real_data, start_year, end_year, block_size
+    rng_tester = RandomnessTester(None, "discretize", False, 00, 00, 00)
+    rng_tester.load_test_data("pi")
     rng_tester.test_monobit_test()
     rng_tester.test_block_frequency_test()
     rng_tester.test_runs_test()

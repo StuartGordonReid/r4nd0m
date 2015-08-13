@@ -9,6 +9,11 @@ import random as sysrandom
 from Crypto.Random import random
 
 
+# TODO: Add better comments to this file
+# TODO: Identify more markets to include in study
+# TODO: Move Random Number Generators into Separate Class
+
+
 def setup_environment():
     token = ""
     try:
