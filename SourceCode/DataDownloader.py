@@ -45,7 +45,7 @@ class QuandlInterface:
                 try:
                     data_frame = data_frame.drop(d, axis=1)
                 except:
-                    print("No column", d, "to drop")
+                    continue
         except Quandl.DatasetNotFound:
             print("Data set not found")
         except Quandl.ErrorDownloading:
@@ -109,7 +109,7 @@ class Argument:
         self.prefix = prefix
         # The default drop columns for Google Finance data
         if drop is None:
-            drop = ["High", "Low", "Open", "Volume", "Adjusted Close"]
+            drop = ["High", "Low", "Open", "Volume", "Adjusted Close", ""]
         self.drop = drop
 
     def to_string(self):
@@ -119,4 +119,4 @@ class Argument:
         unique_id += " end=" + self.end
         unique_id += " trans=" + self.transformation
         unique_id += ".csv"
-        return unique_id
+        return unique_id.replace("\\", "-").replace("/", "-")

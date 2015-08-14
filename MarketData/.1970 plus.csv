@@ -1,0 +1,4 @@
+ID,DROP,DESCRIPTION
+BCB/UDJIAD1,#,Dow Jones Industrial Average
+YAHOO/INDEX_GSPC,Open#High#Low#Volume#Adjusted Close,S&P 500 Index
+YAHOO/INDEX_HSI,Open#High#Low#Volume#Adjusted Close,Hang Seng Index (Hong Kong)

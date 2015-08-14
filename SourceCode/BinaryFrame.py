@@ -13,11 +13,11 @@ class BinaryFrame:
         """
         self.data = data
         self.bin_data = {}
-        self.time = math.floor((end - start) / years_per_block)
+        self.time_periods = math.floor((end - start) / years_per_block)
         self.columns = self.data.columns
         self.method = "discretize"
 
-    def convert(self, method, stream_length, convert=True):
+    def convert(self, method, convert=True):
         """
         A method for discretizing a pandas DataFrame into a Dictionary of Binary Strings
         1) If the return is +, then set the equivalent bit to 1
@@ -25,30 +25,47 @@ class BinaryFrame:
         Note that using this method compresses the data significantly
         :return:
         """
-        self.method = method
-        for c in self.data.columns:
-            cbin_data, index = [], 0
-            if method == "discretize":
-                stream_length = math.floor(len(self.data[c]) / self.time)
-            while len(cbin_data) < self.time:
-                bstring = ""
-                while len(bstring) < stream_length:
+        # For each data set i.e. security return sequences
+        for data_set in self.data.columns:
+            # List of binary streams
+            binary_streams = []
+            # Days stepped through
+            day_counter = 0
+            # Total number of days i.e. returns
+            days = len(self.data[data_set])
+            # Days per binary stream
+            days_in_stream = math.floor(days / self.time_periods)
+            # While less binary streams than time periods
+            while len(binary_streams) < self.time_periods:
+                # Start a new binary stream
+                binary_stream = ""
+                # Convert each day into binary
+                for j in range(days_in_stream):
                     bit = ""
                     if method == "discretize":
-                        bit = self.discretize(self.data[c][index])
+                        bit = self.discretize(self.data[data_set][day_counter])
                     elif method == "convert basis point":
-                        bit = self.convert_basis_point(self.data[c][index], convert)
+                        bit = self.convert_basis_point(self.data[data_set][day_counter], convert)
                     elif method == "convert floating point":
-                        bit = self.convert_floating_point(self.data[c][index])
+                        bit = self.convert_floating_point(self.data[data_set][day_counter])
                     else:
                         print("Unknown conversion method ... exiting application")
                         exit(0)
-                    index += 1
-                    bstring += bit
-                cbin_data.append(bstring)
-            self.bin_data[c] = cbin_data
+                    # Keep tack of days
+                    day_counter += 1
+                    # Add day to binary stream
+                    binary_stream += bit
+                # Append binary stream to binary streams list
+                binary_streams.append(binary_stream)
+            # Set the binary data for this data set to the binary streams list
+            self.bin_data[data_set] = binary_streams
 
     def discretize(self, fp):
+        """
+        This method discretizes the floating point number according to whether it is + or -
+        :param fp: the floating point number to convert
+        :return: a binary string
+        """
         if fp > 0.0:
             return '1'
         if fp < 0.0:
@@ -57,6 +74,12 @@ class BinaryFrame:
             return '01'
 
     def convert_basis_point(self, fp, convert=True):
+        """
+        This method converts a floating point number to an integer (basis points) and then converts it to binary
+        :param fp: floating point number
+        :param convert: if true, then the number is not already an integer
+        :return: a binary string
+        """
         if convert:
             fp = int(fp * 100)
         bstring = bin(fp)
@@ -68,6 +91,12 @@ class BinaryFrame:
             return '01'
 
     def convert_floating_point(self, fp, length=64):
+        """
+        This method converts a floating point number into a binary string using the IEEE 754 method
+        :param fp: floating point number
+        :param length: the length of the resulting bit string
+        :return: a binary string
+        """
         bin_r = bitstring.BitArray(float=fp, length=length)
         bits = str(bin_r._getbin())[1:]
         if fp > 0.0:
@@ -78,10 +107,11 @@ class BinaryFrame:
             return '01'
 
     def flip_bits(self, bit):
+        """
+        This method flips the bits in a binary string
+        :param bit: the binary string
+        :return:
+        """
         bit = bit.replace('1', '2')
         bit = bit.replace('0', '1')
         return bit.replace('2', '0')
-
-
-if __name__ == '__main__':
-    print("Nothing")

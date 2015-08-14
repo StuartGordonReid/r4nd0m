@@ -1,0 +1,8 @@
+ID,DROP,DESCRIPTION
+BCB/UDJIAD1,#,Dow Jones Industrial Average
+YAHOO/INDEX_GSPC,Open#High#Low#Volume#Adjusted Close,S&P 500 Index
+YAHOO/INDEX_HSI,Open#High#Low#Volume#Adjusted Close,Hang Seng Index (Hong Kong)
+YAHOO/INDEX_AEX,Open#High#Low#Volume#Adjusted Close,AEX Amsterdam Index
+YAHOO/INDEX_GDAXI,Open#High#Low#Volume#Adjusted Close,DAX Index (Germany)
+PRAGUESE/PX,% Change,Prague Stock Index: PX
+YAHOO/INDEX_SSEC,Open#High#Low#Volume#Adjusted Close,Shanghai Composite Index (China)
