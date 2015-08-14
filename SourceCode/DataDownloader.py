@@ -12,6 +12,20 @@ class QuandlInterface:
         self.api_key = api_key
 
     def get_data_set(self, argument):
+        file_name = argument.to_string()
+        basepath = os.path.dirname(__file__)
+        path = os.path.abspath(os.path.join(basepath, "..", "MarketData\\" + file_name))
+        try:
+            data_frame = pandas.read_csv(path)
+            data_frame = data_frame.set_index("Date")
+            return data_frame
+        except:
+            data_frame = self.download_data_set(argument)
+            data_frame.to_csv(path, mode="w+")
+            return data_frame
+
+
+    def download_data_set(self, argument):
         """
         This method tries to fetch a data set from Quandl
         :param argument: an argument object which contains the information to construct the request
@@ -97,3 +111,12 @@ class Argument:
         if drop is None:
             drop = ["High", "Low", "Open", "Volume", "Adjusted Close"]
         self.drop = drop
+
+    def to_string(self):
+        unique_id = "Cache"
+        unique_id += " id=" + self.id
+        unique_id += " start=" + self.start
+        unique_id += " end=" + self.end
+        unique_id += " trans=" + self.transformation
+        unique_id += ".csv"
+        return unique_id

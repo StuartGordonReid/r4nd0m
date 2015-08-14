@@ -18,7 +18,7 @@ class Colours:
 
 
 class RandomnessTester:
-    def __init__(self, bin, method, real_data, start_year, end_year, block_size):
+    def __init__(self, bin, method, real_data, start_year, end_year):
         """
         Initializes a randomness tester object for testing binary sequences for randomness
         :param bin: this is a "BinaryFrame" object which is a conversion of a pandas DataFrame into a binary dictionary
@@ -28,7 +28,6 @@ class RandomnessTester:
         self.real_data = real_data
         self.start_year = start_year
         self.end_year = end_year
-        self.block_size = block_size
         self.epsilon = 0.0000001
         self.condition = 0.001
 

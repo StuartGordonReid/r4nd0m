@@ -1,3 +1,4 @@
+import math
 import bitstring
 
 
@@ -5,14 +6,14 @@ import bitstring
 
 
 class BinaryFrame:
-    def __init__(self, data, stream_size):
+    def __init__(self, data, start, end):
         """
         Initialization method for a Binary Frame object
         :param data: a pandas DataFrame to convert
         """
         self.data = data
         self.bin_data = {}
-        self.stream_size = stream_size
+        self.time = end - start
         self.columns = self.data.columns
         self.method = "discretize"
 
@@ -27,9 +28,10 @@ class BinaryFrame:
         self.method = method
         for c in self.data.columns:
             cbin_data, index = [], 0
-            while (len(self.data[c]) - index) > self.stream_size:
+            stream_length = math.floor(len(self.data[c]) / self.time)
+            while len(cbin_data) < self.time:
                 bstring = ""
-                while len(bstring) < self.stream_size:
+                while len(bstring) < stream_length:
                     bit = ""
                     if method == "discretize":
                         bit = self.discretize(self.data[c][index])
@@ -44,7 +46,6 @@ class BinaryFrame:
                     bstring += bit
                 cbin_data.append(bstring)
             self.bin_data[c] = cbin_data
-            # print(len(cbin_data) * self.stream_size)
 
     def discretize(self, fp):
         if fp > 0.0:
