@@ -33,7 +33,7 @@ def setup_environment():
     return token
 
 
-def construct_binary_frame(method, token, start, end):
+def construct_binary_frame(method, token, start, end, years_per_block, stream_length):
     downloader = QuandlInterface(token)
     data_sets = list(pandas.read_csv("MarketData\\.DataSets.csv")["ID"])
     data_prefix = "YAHOO/"
@@ -44,19 +44,19 @@ def construct_binary_frame(method, token, start, end):
     for ds in data_sets:
         my_arguments.append(Argument(ds, start_date, end_date, data_prefix, None, transform))
     data_frame_full = downloader.get_data_sets(my_arguments)
-    binary_frame = BinaryFrame(data_frame_full, start, end)
-    binary_frame.convert(method)
+    binary_frame = BinaryFrame(data_frame_full, start, end, years_per_block)
+    binary_frame.convert(method, stream_length)
     return binary_frame
 
 
-def construct_long_binary_frame(method, start, end):
+def construct_long_binary_frame(method, start, end, years_per_block, stream_length):
     data = pandas.read_csv("MarketData\\.S&P500.csv")
     assert isinstance(data, pandas.DataFrame)
     data = data.set_index("Date")
     data = data.drop("Close", axis=1)
     data = data.reindex(index=data.index[::-1])
-    binary_frame = BinaryFrame(data, start, end)
-    binary_frame.convert(method)
+    binary_frame = BinaryFrame(data, start, end, years_per_block)
+    binary_frame.convert(method, stream_length)
     return binary_frame
 
 
@@ -83,16 +83,27 @@ def crypto_random(length):
     return nrng
 
 
-def run_experiments(block_sizes, q_sizes, length, methods, start, end):
+def run_experiments(block_sizes, q_sizes, methods, start, end, years_per_block, stream_length):
+    breaker = "".zfill(200)
+    breaker = breaker.replace('0', '*')
     for method in methods:
+        print("\n" + breaker)
+        print("METHOD =", method.upper())
+
         if method == "convert floating point":
+            length = stream_length * (end - start)
             prng = numpy_float_random(length)
-        else:
+        elif method == "convert basis point":
+            length = stream_length * (end - start)
             prng = numpy_random(length)
+        else:
+            length = 256 * (end - start)
+            prng = numpy_random(length)
+
         prng_data = pandas.DataFrame(numpy.array(prng))
         prng_data.columns = ["Mersenne"]
-        prng_binary_frame = BinaryFrame(prng_data, start, end)
-        prng_binary_frame.convert(method, convert=False)
+        prng_binary_frame = BinaryFrame(prng_data, start, end, years_per_block)
+        prng_binary_frame.convert(method, stream_length, convert=False)
         # method, real_data, start_year, end_year, block_size
         rng_tester = RandomnessTester(prng_binary_frame, method, False, 00, 00)
         rng_tester.run_test_suite(block_sizes, q_sizes)
@@ -103,16 +114,17 @@ def run_experiments(block_sizes, q_sizes, length, methods, start, end):
         nrand -= numpy.mean(nrand)
         nrand_data = pandas.DataFrame(numpy.array(nrand))
         nrand_data.columns = ["Deterministic"]
-        nrand_binary_frame = BinaryFrame(nrand_data, start, end)
-        nrand_binary_frame.convert(method, convert=False)
+        nrand_binary_frame = BinaryFrame(nrand_data, start, end, years_per_block)
+        nrand_binary_frame.convert(method, stream_length, convert=True)
         rng_tester = RandomnessTester(nrand_binary_frame, method, False, 00, 00)
         rng_tester.run_test_suite(block_sizes, q_sizes)
 
         t = setup_environment()
-        my_binary_frame = construct_binary_frame("discretize", t, start, end)
+        my_binary_frame = construct_binary_frame(method, t, start, end, years_per_block, stream_length)
         rng_tester = RandomnessTester(my_binary_frame, method, True, start, end)
         # my_binary_frame = construct_long_binary_frame(method, stream_length)
         rng_tester.run_test_suite(block_sizes, q_sizes)
+    print("\n" + breaker)
 
 
 def clean_up():
@@ -123,10 +135,6 @@ def clean_up():
 
 
 if __name__ == '__main__':
-    # "discretize"
-    # "convert basis point"
-    # "convert floating point"
-    m = ["discretize"]
-    setup_environment()
-    run_experiments(128, 16, int((252*1)*15), m, 2000, 2015)
+    m = ["discretize", "convert basis point", "convert floating point"]
+    run_experiments(128, 16, m, 2000, 2015, 1.0, 256)
     clean_up()

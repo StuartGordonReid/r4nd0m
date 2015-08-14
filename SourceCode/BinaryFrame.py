@@ -6,18 +6,18 @@ import bitstring
 
 
 class BinaryFrame:
-    def __init__(self, data, start, end):
+    def __init__(self, data, start, end, years_per_block):
         """
         Initialization method for a Binary Frame object
         :param data: a pandas DataFrame to convert
         """
         self.data = data
         self.bin_data = {}
-        self.time = end - start
+        self.time = math.floor((end - start) / years_per_block)
         self.columns = self.data.columns
         self.method = "discretize"
 
-    def convert(self, method="discretize", convert=True):
+    def convert(self, method, stream_length, convert=True):
         """
         A method for discretizing a pandas DataFrame into a Dictionary of Binary Strings
         1) If the return is +, then set the equivalent bit to 1
@@ -28,7 +28,8 @@ class BinaryFrame:
         self.method = method
         for c in self.data.columns:
             cbin_data, index = [], 0
-            stream_length = math.floor(len(self.data[c]) / self.time)
+            if method == "discretize":
+                stream_length = math.floor(len(self.data[c]) / self.time)
             while len(cbin_data) < self.time:
                 bstring = ""
                 while len(bstring) < stream_length:

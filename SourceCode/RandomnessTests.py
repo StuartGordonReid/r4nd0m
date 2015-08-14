@@ -56,13 +56,13 @@ class RandomnessTester:
         return (npvals > self.condition).sum() / len(pvals)
 
     def print_dates(self, blocks):
-        if self.real_data and self.method == "discretize":
+        if self.real_data:
             filler = "".zfill(64)
             string_out = filler.replace("0", " ")
             step = (self.end_year - self.start_year) / blocks
             dates = numpy.arange(start=self.start_year, stop=self.end_year, step=step)
             for i in range(blocks):
-                start_string = str(int(dates[i]))
+                start_string = "~" + str(int(dates[i]))
                 string_out += start_string + "\t"
             print(string_out)
 
@@ -380,6 +380,7 @@ class RandomnessTester:
         block_size = int(q * q)
         num_m = math.floor(n / (q * q))
         block_start, block_end = 0, block_size
+        # print(q, n, num_m, block_size)
 
         if num_m > 0:
             max_ranks = [0, 0, 0]
@@ -436,7 +437,7 @@ class RandomnessTester:
 
 if __name__ == '__main__':
     # bin, method, real_data, start_year, end_year, block_size
-    rng_tester = RandomnessTester(None, "discretize", False, 00, 00, 00)
+    rng_tester = RandomnessTester(None, "discretize", False, 00, 00)
     rng_tester.load_test_data("pi")
     rng_tester.test_monobit_test()
     rng_tester.test_block_frequency_test()
