@@ -1,12 +1,14 @@
-from DataDownloader import QuandlInterface, Argument
-from RandomnessTests import RandomnessTester
-from BinaryFrame import BinaryFrame
-import pandas
-import numpy
 import csv
 import os
 import random as sysrandom
+
+import pandas
+import numpy
 from Crypto.Random import random
+
+from SourceCode.DataDownloader import QuandlInterface, Argument
+from SourceCode.RandomnessTests import RandomnessTester
+from SourceCode.BinaryFrame import BinaryFrame
 
 
 # TODO: Add better comments to this file
@@ -17,7 +19,7 @@ from Crypto.Random import random
 def setup_environment():
     token = ""
     try:
-        with open('.private.csv', 'r') as csvfile:
+        with open(".private.csv", "r") as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
             for row in reader:
                 if row[0] == "HTTP" and row[1] != "None":
@@ -51,7 +53,7 @@ def construct_binary_frame(method, token, stream_size):
 
 
 def construct_long_binary_frame(method, stream_size):
-    data = pandas.read_csv("S&P 500 History.csv")
+    data = pandas.read_csv("MarketData\\S&P 500 History.csv")
     assert isinstance(data, pandas.DataFrame)
     data = data.set_index("Date")
     data = data.drop("Close", axis=1)
@@ -116,10 +118,18 @@ def run_experiments(block_sizes, q_sizes, length, stream_length, methods):
         rng_tester.run_test_suite(block_sizes, q_sizes)
 
 
+def clean_up():
+    try:
+        os.remove("authtoken.p")
+    except FileNotFoundError:
+        print("Auth token pickle not found")
+
+
 if __name__ == '__main__':
     # "discretize"
     # "convert basis point"
     # "convert floating point"
     m = ["discretize"]
+    setup_environment()
     run_experiments(128, 16, int((252*2.0)*55), int(252*2.0), m)
-
+    clean_up()
