@@ -19,7 +19,7 @@ from SourceCode.BinaryFrame import BinaryFrame
 def setup_environment():
     token = ""
     try:
-        with open(".private.csv", "r") as csvfile:
+        with open("MetaData\\.private.csv", "r") as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
             for row in reader:
                 if row[0] == "HTTP" and row[1] != "None":
@@ -50,17 +50,6 @@ def construct_binary_frame(data_sets, method, token, start, end, years_per_block
         my_arguments.append(Argument(data_sets[i], start_date, end_date, data_prefix, drop, transform))
     data_frame_full = downloader.get_data_sets(my_arguments)
     binary_frame = BinaryFrame(data_frame_full, start, end, years_per_block)
-    binary_frame.convert(method)
-    return binary_frame
-
-
-def construct_long_binary_frame(method, start, end, years_per_block):
-    data = pandas.read_csv("MarketData\\.S&P500.csv")
-    assert isinstance(data, pandas.DataFrame)
-    data = data.set_index("Date")
-    data = data.drop("Close", axis=1)
-    data = data.reindex(index=data.index[::-1])
-    binary_frame = BinaryFrame(data, start, end, years_per_block)
     binary_frame.convert(method)
     return binary_frame
 
@@ -135,5 +124,5 @@ def clean_up():
 if __name__ == '__main__':
     m = ["discretize"]
     # , "convert basis point", "convert floating point"]
-    run_experiments("MarketData\\.1900 plus.csv", 128, 16, m, 1900, 2015, 1.0)
+    run_experiments("MetaData\\.1900 plus.csv", 128, 16, m, 1900, 2015, 1.0)
     clean_up()
