@@ -124,5 +124,9 @@ def clean_up():
 if __name__ == '__main__':
     m = ["discretize"]
     # , "convert basis point", "convert floating point"]
-    run_experiments("MetaData\\.1900 plus.csv", 128, 16, m, 1900, 2015, 1.0)
+    run_experiments("MetaData\\.1900 plus.csv", 128, 16, m, 1900, 2015, 5.0)
+    run_experiments("MetaData\\.1950 plus.csv", 128, 16, m, 1950, 2015, 5.0)
+    run_experiments("MetaData\\.1960 plus.csv", 128, 16, m, 1960, 2015, 5.0)
+    run_experiments("MetaData\\.1970 plus.csv", 128, 16, m, 1970, 2015, 5.0)
+    run_experiments("MetaData\\.1990 plus.csv", 128, 16, m, 1990, 2015, 5.0)
     clean_up()
