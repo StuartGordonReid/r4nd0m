@@ -14,7 +14,7 @@ class QuandlInterface:
     def get_data_set(self, argument):
         file_name = argument.to_string()
         basepath = os.path.dirname(__file__)
-        path = os.path.abspath(os.path.join(basepath, "..", "MarketData\\" + file_name))
+        path = os.path.abspath(os.path.join(basepath, os.pardir, "MarketData", file_name))
         try:
             data_frame = pandas.read_csv(path)
             data_frame = data_frame.set_index("Date")
@@ -23,7 +23,6 @@ class QuandlInterface:
             data_frame = self.download_data_set(argument)
             data_frame.to_csv(path, mode="w+")
             return data_frame
-
 
     def download_data_set(self, argument):
         """

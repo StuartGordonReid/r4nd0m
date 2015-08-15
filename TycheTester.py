@@ -19,7 +19,7 @@ from SourceCode.BinaryFrame import BinaryFrame
 def setup_environment():
     token = ""
     try:
-        with open("MetaData\\.private.csv", "r") as csvfile:
+        with open(os.path.join("MetaData", ".private.csv"), "r") as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
             for row in reader:
                 if row[0] == "HTTP" and row[1] != "None":
@@ -124,9 +124,9 @@ def clean_up():
 if __name__ == '__main__':
     m = ["discretize"]
     # , "convert basis point", "convert floating point"]
-    run_experiments("MetaData\\.1900 plus.csv", 128, 16, m, 1900, 2015, 5.0)
-    run_experiments("MetaData\\.1950 plus.csv", 128, 16, m, 1950, 2015, 5.0)
-    run_experiments("MetaData\\.1960 plus.csv", 128, 16, m, 1960, 2015, 5.0)
-    run_experiments("MetaData\\.1970 plus.csv", 128, 16, m, 1970, 2015, 5.0)
-    run_experiments("MetaData\\.1990 plus.csv", 128, 16, m, 1990, 2015, 5.0)
+    run_experiments(os.path.join("MetaData", ".1900 plus.csv"), 128, 16, m, 1900, 2015, 10.0)
+    run_experiments(os.path.join("MetaData", ".1950 plus.csv"), 128, 16, m, 1950, 2015, 10.0)
+    run_experiments(os.path.join("MetaData", ".1960 plus.csv"), 128, 16, m, 1950, 2015, 10.0)
+    run_experiments(os.path.join("MetaData", ".1970 plus.csv"), 128, 16, m, 1950, 2015, 10.0)
+    run_experiments(os.path.join("MetaData", ".1990 plus.csv"), 128, 16, m, 1950, 2015, 10.0)
     clean_up()
