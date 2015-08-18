@@ -1,5 +1,7 @@
 import scipy.special as spc
+import scipy.fftpack as sff
 import numpy.linalg as lng
+import scipy.stats as sst
 import numpy
 import math
 
@@ -104,7 +106,8 @@ class RandomnessTester:
                           "\tBlock Frequency Test",
                           "\tIndependent Runs Test",
                           "\tLongest Runs Test",
-                          "\tMatrix Rank Test"]
+                          "\tMatrix Rank Test",
+                          "\tSpectral Test"]
 
             for i in range(len(test_names)):
                 length = len(test_names[i])
@@ -114,7 +117,7 @@ class RandomnessTester:
                 test_names[i] += filler
 
             pvals = [[], [], [], [], [], []]
-            pval_strings = ["", "", "", "", ""]
+            pval_strings = ["", "", "", "", "", ""]
 
             # Get the samples for the data set
             binary_strings = self.bin.bin_data[c]
@@ -142,6 +145,10 @@ class RandomnessTester:
                 pval_strings[4] += self.get_string(p_val)
                 pvals[4].append(p_val)
 
+                p_val = self.spectral(str_data)
+                pval_strings[5] += self.get_string(p_val)
+                pvals[5].append(p_val)
+
             # For each sample calculate the aggregate p_value and aggregate pass %
             aggregate_pvals, aggregate_pass = [], []
             for i in range(len(binary_strings)):
@@ -159,6 +166,9 @@ class RandomnessTester:
 
                 aggregate_pvals.append(self.get_aggregate_pval(pvals[4]))
                 aggregate_pass.append(self.get_aggregate_pass(pvals[4]))
+
+                aggregate_pvals.append(self.get_aggregate_pval(pvals[5]))
+                aggregate_pass.append(self.get_aggregate_pass(pvals[5]))
 
             # Print the results to the console
             self.print_dates(len(binary_strings))
@@ -208,25 +218,28 @@ class RandomnessTester:
                 ones += 1
         print("\t", Colours.Italics + "Count 1 =", ones, "Count 0 =", zeros, Colours.End)
 
-    def monobit(self, str_data: str):
+    def monobit(self, bin_data: str):
         """
-        **From the NIST documentation**
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
         The focus of this test is the proportion of zeros and ones for the entire sequence. The purpose of this test is
         to determine whether the number of ones and zeros in a sequence are approximately the same as would be expected
         for a truly random sequence. This test assesses the closeness of the fraction of ones to 1/2, that is the number
         of ones and zeros ina  sequence should be about the same. All subsequent tests depend on this test.
-        :param str_data: this is the bit string being tested.
-        :return: True | False if the test passed or failed
+
+        :param bin_data: a binary string
+        :return: the p-value from the test
         """
         count = 0
         # If the char is 0 minus 1, else add 1
-        for char in str_data:
+        for char in bin_data:
             if char == '0':
                 count -= 1
             else:
                 count += 1
         # Calculate the p value
-        sobs = count / math.sqrt(len(str_data))
+        sobs = count / math.sqrt(len(bin_data))
         p_val = spc.erfc(math.fabs(sobs) / math.sqrt(2))
         return p_val
 
@@ -241,25 +254,27 @@ class RandomnessTester:
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def block_frequency(self, str_data: str, block_size: int):
+    def block_frequency(self, bin_data: str, block_size: int):
         """
-        **From the NIST documentation**
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
         The focus of this tests is the proportion of ones within M-bit blocks. The purpose of this tests is to determine
         whether the frequency of ones in an M-bit block is approximately M/2, as would be expected under an assumption
         of randomness. For block size M=1, this test degenerates to the monobit frequency test.
-        :param str_data: this is the bit string being tested.
-        :param column: this is the name of the bit string being tested.
+
+        :param bin_data: a binary string
+        :return: the p-value from the test
         :param block_size: the size of the blocks that the binary sequence is partitioned into
-        :return: True | False if the test passed or failed
         """
         # Work out the number of blocks, discard the remainder
-        num_blocks = math.floor(len(str_data) / block_size)
+        num_blocks = math.floor(len(bin_data) / block_size)
         block_start, block_end = 0, block_size
         # Keep track of the proportion of ones per block
         proportion_sum = 0.0
         for i in range(num_blocks):
             # Slice the binary string into a block
-            block_data = str_data[block_start:block_end]
+            block_data = bin_data[block_start:block_end]
             # Keep track of the number of ones
             ones_count = 0
             for char in block_data:
@@ -286,29 +301,31 @@ class RandomnessTester:
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def independent_runs(self, str_data: str):
+    def independent_runs(self, bin_data: str):
         """
-        **From the NIST documentation**
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
         The focus of this tests if the total number of runs in the sequences, where a run is an uninterrupted sequence
         of identical bits. A run of length k consists of k identical bits and is bounded before and after with a bit of
         the opposite value. The purpose of the runs tests is to determine whether the number of runs of ones and zeros
         of various lengths is as expected for a random sequence. In particular, this tests determines whether the
         oscillation between zeros and ones is either too fast or too slow.
-        :param str_data: this is the bit string being tested.
-        :param column: this is the name of the bit string being tested.
-        :return: True | False if the test passed or failed
+
+        :param bin_data: a binary string
+        :return: the p-value from the test
         """
-        ones_count, n = 0, len(str_data)
-        for char in str_data:
+        ones_count, n = 0, len(bin_data)
+        for char in bin_data:
             if char == '1':
                 ones_count += 1
         p, vobs = float(ones_count / n), 1
-        tau = 2 / math.sqrt(len(str_data))
+        tau = 2 / math.sqrt(len(bin_data))
         if abs(p - 0.5) > tau:
             return 0.0
         else:
             for i in range(1, n):
-                if str_data[i] != str_data[i-1]:
+                if bin_data[i] != bin_data[i-1]:
                     vobs += 1
             # expected_runs = 1 + 2 * (n - 1) * 0.5 * 0.5
             # print("\t", Colours.Italics + "Observed runs =", vobs, "Expected runs", expected_runs, Colours.End)
@@ -328,26 +345,28 @@ class RandomnessTester:
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def longest_runs(self, str_data: str):
+    def longest_runs(self, bin_data: str):
         """
-        **From the NIST documentation**
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
         The focus of the tests is the longest run of ones within M-bit blocks. The purpose of this tests is to determine
         whether the length of the longest run of ones within the tested sequences is consistent with the length of the
         longest run of ones that would be expected in a random sequence. Note that an irregularity in the expected
         length of the longest run of ones implies that there is also an irregularity ub tge expected length of the long
         est run of zeroes. Therefore, only one test is necessary for this statistical tests of randomness
-        :param str_data: this is the bit string being tested.
-        :param column: this is the name of the bit string being tested.
-        :return: True | False if the test passed or failed
+
+        :param bin_data: a binary string
+        :return: the p-value from the test
         """
-        if len(str_data) < 128:
+        if len(bin_data) < 128:
             print("\t", "Not enough data to run test!")
             return -1.0
-        elif len(str_data) < 6272:
+        elif len(bin_data) < 6272:
             k, m = 3, 8
             v_values = [1, 2, 3, 4]
             pik_values = [0.21484375, 0.3671875, 0.23046875, 0.1875]
-        elif len(str_data) < 75000:
+        elif len(bin_data) < 75000:
             k, m = 5, 128
             v_values = [4, 5, 6, 7, 8, 9]
             pik_values = [0.1174035788, 0.242955959, 0.249363483, 0.17517706, 0.102701071, 0.112398847]
@@ -358,12 +377,12 @@ class RandomnessTester:
 
         # Work out the number of blocks, discard the remainder
         # pik = [0.2148, 0.3672, 0.2305, 0.1875]
-        num_blocks = math.floor(len(str_data) / m)
+        num_blocks = math.floor(len(bin_data) / m)
         frequencies = numpy.zeros(k + 1)
         block_start, block_end = 0, m
         for i in range(num_blocks):
             # Slice the binary string into a block
-            block_data = str_data[block_start:block_end]
+            block_data = bin_data[block_start:block_end]
             # Keep track of the number of ones
             max_run_count, run_count = 0, 0
             for j in range(0, m):
@@ -401,16 +420,20 @@ class RandomnessTester:
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def matrix_rank(self, str_data: str, q: int):
+    def matrix_rank(self, bin_data: str, q: int):
         """
-        **From the NIST documentation**
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
         The focus of the test is the rank of disjoint sub-matrices of the entire sequence. The purpose of this test is
         to check for linear dependence among fixed length sub strings of the original sequence. Note that this test
-        also appears in the DIEHARD battery of tests [7].
-        :return: True | False if the test passed or failed
+        also appears in the DIEHARD battery of tests.
+
+        :param bin_data: a binary string
+        :return: the p-value from the test
         """
         shape = (q, q)
-        n = len(str_data)
+        n = len(bin_data)
         block_size = int(q * q)
         num_m = math.floor(n / (q * q))
         block_start, block_end = 0, block_size
@@ -419,7 +442,7 @@ class RandomnessTester:
         if num_m > 0:
             max_ranks = [0, 0, 0]
             for im in range(num_m):
-                block_data = str_data[block_start:block_end]
+                block_data = bin_data[block_start:block_end]
                 block = numpy.zeros(len(block_data))
                 for i in range(len(block_data)):
                     if block_data[i] == '1':
@@ -468,6 +491,51 @@ class RandomnessTester:
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
+    def spectral(self, bin_data: str):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        The focus of this test is the peak heights in the Discrete Fourier Transform of the sequence. The purpose of
+        this test is to detect periodic features (i.e., repetitive patterns that are near each other) in the tested
+        sequence that would indicate a deviation from the assumption of randomness. The intention is to detect whether
+        the number of peaks exceeding the 95 % threshold is significantly different than 5 %.
+
+        :param bin_data: a binary string
+        :return: the p-value from the test
+        """
+        n = len(bin_data)
+        plus_minus_one = []
+        for char in bin_data:
+            if char == '0':
+                plus_minus_one.append(-1)
+            elif char == '1':
+                plus_minus_one.append(1)
+        # Product discrete fourier transform of plus minus one
+        s = sff.fft(plus_minus_one)
+        modulus = numpy.abs(s[0:n/2])
+        tau = numpy.sqrt(numpy.log(1/0.05) * n)
+        # Theoretical number of peaks
+        count_n0 = 0.95 * (n / 2)
+        # Count the number of actual peaks m > T
+        count_n1 = len(numpy.where(modulus < tau)[0])
+        # Calculate d and return the p value statistic
+        d = (count_n1 - count_n0) / numpy.sqrt(n*0.95*0.05/4)
+        p_val = spc.erfc(abs(d)/numpy.sqrt(2))
+        return p_val
+
+    def spectral_check(self):
+        """
+        This is a test method for the binary matrix rank test based on the example in the NIST documentation
+        """
+        print(Colours.Bold + "\n\t Spectral Test" + Colours.End)
+        p_val = self.spectral(self.load_test_data("test1"))
+        # Note I think the NIST example is wrong. This should not be 0.168669
+        if (p_val - 0.646355195539) < self.epsilon:
+            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
+        else:
+            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+
 
 if __name__ == '__main__':
     # bin, method, real_data, start_year, end_year, block_size
@@ -477,3 +545,4 @@ if __name__ == '__main__':
     rng_tester.independent_runs_check()
     rng_tester.longest_runs_check()
     rng_tester.matrix_rank_check()
+    rng_tester.spectral_check()

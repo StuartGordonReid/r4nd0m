@@ -62,7 +62,7 @@ def run_experiments(data_sets, block_sizes, q_sizes, methods, start, end, years_
 
         length = 256 * (end - start)
         gen = Generators(length)
-        prng = gen.crypto_integer()
+        prng = gen.numpy_integer()
 
         prng_data = pandas.DataFrame(numpy.array(prng))
         prng_data.columns = ["Mersenne"]
@@ -101,9 +101,9 @@ def clean_up():
 if __name__ == '__main__':
     m = ["discretize"]
     # , "convert basis point", "convert floating point"]
-    run_experiments(os.path.join("MetaData", ".1900 plus.csv"), 128, 16, m, 1900, 2015, 10.0)
-    run_experiments(os.path.join("MetaData", ".1950 plus.csv"), 128, 16, m, 1950, 2015, 10.0)
-    run_experiments(os.path.join("MetaData", ".1960 plus.csv"), 128, 16, m, 1960, 2015, 10.0)
-    run_experiments(os.path.join("MetaData", ".1970 plus.csv"), 128, 16, m, 1970, 2015, 10.0)
-    run_experiments(os.path.join("MetaData", ".1990 plus.csv"), 128, 16, m, 1990, 2015, 10.0)
+    # run_experiments(os.path.join("MetaData", ".1900 plus.csv"), 128, 16, m, 1900, 2015, 10.0)
+    run_experiments(os.path.join("MetaData", ".1950 plus.csv"), 128, 16, m, 1950, 2015, 5.0)
+    # run_experiments(os.path.join("MetaData", ".1960 plus.csv"), 128, 16, m, 1960, 2015, 10.0)
+    # run_experiments(os.path.join("MetaData", ".1970 plus.csv"), 128, 16, m, 1970, 2015, 10.0)
+    # run_experiments(os.path.join("MetaData", ".1990 plus.csv"), 128, 16, m, 1990, 2015, 10.0)
     clean_up()
