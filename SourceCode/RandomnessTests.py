@@ -5,6 +5,7 @@ import scipy.stats as sst
 import numpy
 import math
 import copy
+import os
 
 
 # TODO: Complete the rest of the Randomness Tests
@@ -206,12 +207,13 @@ class RandomnessTester:
         """
         try:
             raw_data = ""
-            with open("TestData/" + data_set, 'r+') as data_set_file:
+            path = os.path.join(os.getcwd(), os.pardir, "TestData", data_set)
+            with open(path, 'r+') as data_set_file:
                 for line in data_set_file:
                     raw_data += line.replace("\n", "").replace("\t", "").replace(" ", "")
             return raw_data
         except FileNotFoundError:
-            print("File not found", data_set, "exiting")
+            print("File not found", path, "exiting")
             exit(0)
 
     def zeros_and_ones_count(self, str_data: str):
@@ -254,19 +256,30 @@ class RandomnessTester:
         p_val = spc.erfc(math.fabs(sobs) / math.sqrt(2))
         return p_val
 
+    def generic_checker(self, test_name, expected, function):
+        """
+        This is a test method for the monobit test method based on the example in the NIST documentation
+        """
+        print("\n\t", Colours.Bold + test_name + Colours.End)
+        data_sets = ["pi", "e", "sqrt2", "sqrt3"]
+        for i in range(len(data_sets)):
+            p_val = function(self.load_test_data(data_sets[i])[:1000000])
+            data_set_label = "".zfill(10 - len(data_sets[i])).replace("0", " ")
+            if abs(p_val - expected[i]) < self.epsilon:
+                print("\t", Colours.Pass + data_sets[i], data_set_label, "\tp expected = ", expected[i],
+                      "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
+            else:
+                print("\t", Colours.Fail + data_sets[i], data_set_label, "\tp expected = ", expected[i],
+                      "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
+
     def monobit_check(self):
         """
         This is a test method for the monobit test method based on the example in the NIST documentation
         """
-        print(Colours.Bold + "\n\t Testing Monobit Test" + Colours.End)
-        p_val = self.monobit(self.load_test_data("test1"))
-        print("\t", "Expected = 0.109599", "Got =", "{0:.6f}".format(p_val))
-        if abs(p_val - 0.109599) < self.epsilon:
-            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
-        else:
-            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+        expected = [0.578211, 0.953749, 0.811881, 0.610051]
+        self.generic_checker("Testing Monobit Test", expected, self.monobit)
 
-    def block_frequency(self, bin_data: str, block_size: int):
+    def block_frequency(self, bin_data: str, block_size=128):
         """
         Note that this description is taken from the NIST documentation [1]
         [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
@@ -306,13 +319,8 @@ class RandomnessTester:
         """
         This is a test method for the block frequency test method based on the example in the NIST documentation
         """
-        print(Colours.Bold + "\n\t Testing Block Frequency Test" + Colours.End)
-        p_val = self.block_frequency(self.load_test_data("test1"), 10)
-        print("\t", "Expected = 0.706438", "Got =", "{0:.6f}".format(p_val))
-        if abs(p_val - 0.706438) < self.epsilon:
-            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
-        else:
-            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+        expected = [0.380615, 0.211072, 0.833222, 0.473961]
+        self.generic_checker("Testing Block Frequency Test", expected, self.block_frequency)
 
     def independent_runs(self, bin_data: str):
         """
@@ -351,13 +359,8 @@ class RandomnessTester:
         """
         This is a test method for the runs test method based on the example in the NIST documentation
         """
-        print(Colours.Bold + "\n\t Testing Runs Test" + Colours.End)
-        p_val = self.independent_runs(self.load_test_data("test1"))
-        print("\t", "Expected = 0.500798", "Got =", "{0:.6f}".format(p_val))
-        if abs(p_val - 0.500798) < self.epsilon:
-            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
-        else:
-            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+        expected = [0.419268, 0.561917, 0.313427, 0.261123]
+        self.generic_checker("Testing Independent Runs Test", expected, self.independent_runs)
 
     def longest_runs(self, bin_data: str):
         """
@@ -427,15 +430,10 @@ class RandomnessTester:
         """
         This is a test method for the longest run test method based on the example in the NIST documentation
         """
-        print(Colours.Bold + "\n\t Testing Longest Run Test" + Colours.End)
-        p_val = self.longest_runs(self.load_test_data("test2"))
-        print("\t", "Expected = 0.180609", "Got =", "{0:.6f}".format(p_val))
-        if abs(p_val - 0.180609) < self.epsilon:
-            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
-        else:
-            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+        expected = [0.024390, 0.718945, 0.012117, 0.446726]
+        self.generic_checker("Testing Longest Runs Test", expected, self.longest_runs)
 
-    def matrix_rank(self, bin_data: str, q: int):
+    def matrix_rank(self, bin_data: str, q=32):
         """
         Note that this description is taken from the NIST documentation [1]
         [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
@@ -494,13 +492,8 @@ class RandomnessTester:
         """
         This is a test method for the binary matrix rank test based on the example in the NIST documentation
         """
-        print(Colours.Bold + "\n\t Binary Matrix Rank Test" + Colours.End)
-        p_val = self.matrix_rank(self.load_test_data("e")[:100000], 32)
-        print("\t", "Expected = 0.532069", "Got =", "{0:.6f}".format(p_val))
-        if abs(p_val - 0.532069) < self.epsilon:
-            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
-        else:
-            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+        expected = [0.083553, 0.306156, 0.823810, 0.314498]
+        self.generic_checker("Testing Matrix Rank Test", expected, self.matrix_rank)
 
     def spectral(self, bin_data: str):
         """
@@ -539,16 +532,10 @@ class RandomnessTester:
         """
         This is a test method for the spectral test based on the example in the NIST documentation
         """
-        print(Colours.Bold + "\n\t Spectral Test" + Colours.End)
-        p_val = self.spectral(self.load_test_data("test1"))
-        print("\t", "Expected = 0.646355195539", "Got =", "{0:.6f}".format(p_val))
-        # Note I think the NIST example is wrong. This should not be 0.168669
-        if abs(p_val - 0.646355195539) < self.epsilon:
-            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
-        else:
-            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+        expected = [0.010186, 0.847187, 0.581909, 0.776046]
+        self.generic_checker("Check Spectral Test", expected, self.spectral)
 
-    def non_overlapping_patterns(self, bin_data: str, pattern: str, num_blocks=8):
+    def non_overlapping_patterns(self, bin_data: str, pattern="000000001", num_blocks=8):
         """
         Note that this description is taken from the NIST documentation [1]
         [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
@@ -596,16 +583,10 @@ class RandomnessTester:
         """
         This is a test method for the non overlapping patterns test based on the example in the NIST documentation
         """
-        print(Colours.Bold + "\n\t Non Overlapping Patterns Test" + Colours.End)
-        num_bits = pow(2, 20)
-        p_val = self.non_overlapping_patterns(self.load_test_data("e")[:num_bits], "000000001")
-        print("\t", "Expected = 0.647302", "Got =", "{0:.6f}".format(p_val))
-        if abs(p_val - 0.647302) < self.epsilon:
-            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
-        else:
-            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+        expected = [0.165757, 0.496601, 0.569461, 0.532235]
+        self.generic_checker("Check Non Overlapping Patterns Test", expected, self.non_overlapping_patterns)
 
-    def overlapping_patterns(self, bin_data: str, pattern: str, block_size=1032):
+    def overlapping_patterns(self, bin_data: str, pattern_size=9, block_size=1032):
         """
         Note that this description is taken from the NIST documentation [1]
         [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
@@ -617,22 +598,22 @@ class RandomnessTester:
         when the pattern is found, the window slides only one bit before resuming the search.
 
         :param bin_data: a binary string
-        :param pattern: the pattern to match to
+        :param pattern_size: the length of the pattern
         :return: the p-value from the test
         """
         n = len(bin_data)
-        pattern_size = len(pattern)
+        pattern = ""
+        for i in range(pattern_size):
+            pattern += "1"
         num_blocks = math.floor(n / block_size)
-        lambda_val = float(block_size - pattern_size) / pow(2, pattern_size)
+        lambda_val = float(block_size - pattern_size + 1) / pow(2, pattern_size)
         eta = lambda_val / 2.0
 
-        piks = numpy.zeros(5)
-        piks[0] = math.exp(-eta)
-        for i in range(1, 4):
-            piks[i] = eta * math.exp(2 * -eta) * (2 ** -eta) * spc.hyp1f1(i + 1, 2, eta)
-        piks[4] = 1.0 - piks.sum()
+        piks = [self.get_prob(i, eta) for i in range(5)]
+        diff = float(numpy.array(piks).sum())
+        piks.append(1.0 - diff)
 
-        pattern_counts = numpy.zeros(5)
+        pattern_counts = numpy.zeros(6)
         for i in range(num_blocks):
             block_start = i * block_size
             block_end = block_start + block_size
@@ -644,30 +625,29 @@ class RandomnessTester:
                 sub_block = block_data[j:j + pattern_size]
                 if sub_block == pattern:
                     pattern_count += 1
-                    j += pattern_size
-                else:
-                    j += 1
-            if pattern_count <= 3:
+                j += 1
+            if pattern_count <= 4:
                 pattern_counts[pattern_count] += 1
             else:
-                pattern_counts[4] += 1
+                pattern_counts[5] += 1
 
         chi_squared = 0.0
         for i in range(len(pattern_counts)):
             chi_squared += pow(pattern_counts[i] - num_blocks * piks[i], 2.0) / (num_blocks * piks[i])
-        return spc.gammaincc(5.0 / 2.0, chi_squared / 2.0)
+        return spc.gammaincc(5.0/2.0, chi_squared/2.0)
+
+    def get_prob(self, u, x):
+        out = 1.0 * numpy.exp(-x)
+        if u != 0:
+            out = 1.0 * x * numpy.exp(2*-x) * (2**-u) * spc.hyp1f1(u + 1, 2, x)
+        return out
 
     def overlapping_patterns_check(self):
         """
         This is a test method for the non overlapping patterns test based on the example in the NIST documentation
         """
-        print(Colours.Bold + "\n\t Non Overlapping Patterns Test" + Colours.End)
-        p_val = self.overlapping_patterns(self.load_test_data("e")[:1000000], "111111111")
-        print("\t", "Expected = 0.110434", "Got =", "{0:.6f}".format(p_val))
-        if abs(p_val - 0.110434) < self.epsilon:
-            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
-        else:
-            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+        expected = [0.296897, 0.110434, 0.791982, 0.082716]
+        self.generic_checker("Check Overlapping Patterns Test", expected, self.overlapping_patterns)
 
 
 class BinaryMatrix:
@@ -786,4 +766,4 @@ def test_binary_matrix():
 
 if __name__ == '__main__':
     test_randomness_tester()
-    test_binary_matrix()
+    # test_binary_matrix()
