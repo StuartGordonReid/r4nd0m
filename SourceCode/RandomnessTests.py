@@ -4,6 +4,7 @@ import numpy.linalg as lng
 import scipy.stats as sst
 import numpy
 import math
+import copy
 
 
 # TODO: Complete the rest of the Randomness Tests
@@ -39,7 +40,7 @@ class RandomnessTester:
         self.real_data = real_data
         self.start_year = start_year
         self.end_year = end_year
-        self.epsilon = 0.0000001
+        self.epsilon = 0.00001
         self.condition = 0.001
 
     def get_string(self, p_val):
@@ -70,7 +71,7 @@ class RandomnessTester:
         expected_count = len(pvals) / 10
         for bin_count in bin_counts:
             chi_squared += pow(bin_count - expected_count, 2.0) / expected_count
-        return spc.gammaincc(9.0/2.0, chi_squared/2.0)
+        return spc.gammaincc(9.0 / 2.0, chi_squared / 2.0)
 
     def get_aggregate_pass(self, pvals):
         """
@@ -187,9 +188,11 @@ class RandomnessTester:
                 if (numpy.array(pvals[i]) == -1.0).sum() > 0:
                     pass_string = Colours.Bold + "SKIP!\t" + Colours.End
 
-                pval_string = Colours.Bold + Colours.Fail + "p=" + "{0:.5f}".format(aggregate_pvals[i]) + "\t" + Colours.End
+                pval_string = Colours.Bold + Colours.Fail + "p=" + "{0:.5f}".format(
+                    aggregate_pvals[i]) + "\t" + Colours.End
                 if aggregate_pvals[i] > self.condition:
-                    pval_string = Colours.Bold + Colours.Pass + "p=" + "{0:.5f}".format(aggregate_pvals[i]) + "\t" + Colours.End
+                    pval_string = Colours.Bold + Colours.Pass + "p=" + "{0:.5f}".format(
+                        aggregate_pvals[i]) + "\t" + Colours.End
                 if (numpy.array(pvals[i]) == -1.0).sum() > 0:
                     pval_string = "p=SKIPPED\t"
 
@@ -257,7 +260,8 @@ class RandomnessTester:
         """
         print(Colours.Bold + "\n\t Testing Monobit Test" + Colours.End)
         p_val = self.monobit(self.load_test_data("test1"))
-        if (p_val - 0.109599) < self.epsilon:
+        print("\t", "Expected = 0.109599", "Got =", "{0:.6f}".format(p_val))
+        if abs(p_val - 0.109599) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
@@ -303,8 +307,9 @@ class RandomnessTester:
         This is a test method for the block frequency test method based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Testing Block Frequency Test" + Colours.End)
-        p_val = self.block_frequency(self.load_test_data("test1"), 3)
-        if (p_val - 0.706438) < self.epsilon:
+        p_val = self.block_frequency(self.load_test_data("test1"), 10)
+        print("\t", "Expected = 0.706438", "Got =", "{0:.6f}".format(p_val))
+        if abs(p_val - 0.706438) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
@@ -333,13 +338,13 @@ class RandomnessTester:
             return 0.0
         else:
             for i in range(1, n):
-                if bin_data[i] != bin_data[i-1]:
+                if bin_data[i] != bin_data[i - 1]:
                     vobs += 1
             # expected_runs = 1 + 2 * (n - 1) * 0.5 * 0.5
             # print("\t", Colours.Italics + "Observed runs =", vobs, "Expected runs", expected_runs, Colours.End)
             num = abs(vobs - 2.0 * n * p * (1.0 - p))
             den = 2.0 * math.sqrt(2.0 * n) * p * (1.0 - p)
-            p_val = spc.erfc(float(num/den))
+            p_val = spc.erfc(float(num / den))
             return p_val
 
     def independent_runs_check(self):
@@ -348,7 +353,8 @@ class RandomnessTester:
         """
         print(Colours.Bold + "\n\t Testing Runs Test" + Colours.End)
         p_val = self.independent_runs(self.load_test_data("test1"))
-        if (p_val - 0.500798) < self.epsilon:
+        print("\t", "Expected = 0.500798", "Got =", "{0:.6f}".format(p_val))
+        if abs(p_val - 0.500798) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
@@ -406,15 +412,15 @@ class RandomnessTester:
             for j in range(k):
                 if max_run_count == v_values[j]:
                     frequencies[j] += 1
-            if max_run_count > v_values[k-1]:
+            if max_run_count > v_values[k - 1]:
                 frequencies[k] += 1
             block_start += m
             block_end += m
         # print(frequencies)
         chi_squared = 0
         for i in range(len(frequencies)):
-            chi_squared += (pow(frequencies[i] - (num_blocks * pik_values[i]), 2.0))/(num_blocks * pik_values[i])
-        p_val = spc.gammaincc(float(k/2), float(chi_squared/2))
+            chi_squared += (pow(frequencies[i] - (num_blocks * pik_values[i]), 2.0)) / (num_blocks * pik_values[i])
+        p_val = spc.gammaincc(float(k / 2), float(chi_squared / 2))
         return p_val
 
     def longest_runs_check(self):
@@ -423,7 +429,8 @@ class RandomnessTester:
         """
         print(Colours.Bold + "\n\t Testing Longest Run Test" + Colours.End)
         p_val = self.longest_runs(self.load_test_data("test2"))
-        if (p_val - 0.180609) < self.epsilon:
+        print("\t", "Expected = 0.180609", "Got =", "{0:.6f}".format(p_val))
+        if abs(p_val - 0.180609) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
@@ -456,7 +463,9 @@ class RandomnessTester:
                     if block_data[i] == '1':
                         block[i] = 1.0
                 m = block.reshape(shape)
-                rank = lng.matrix_rank(m)
+                ranker = BinaryMatrix(m, q, q)
+                rank = ranker.compute_rank()
+                # print(rank)
                 if rank == q:
                     max_ranks[0] += 1
                 elif rank == (q - 1):
@@ -469,14 +478,14 @@ class RandomnessTester:
 
             piks = [1.0, 0.0, 0.0]
             for x in range(1, 50):
-                piks[0] *= 1 - (1.0/(2**x))
+                piks[0] *= 1 - (1.0 / (2 ** x))
             piks[1] = 2 * piks[0]
             piks[2] = 1 - piks[0] - piks[1]
 
             chi = 0.0
             for i in range(len(piks)):
                 chi += pow((max_ranks[i] - piks[i] * num_m), 2.0) / (piks[i] * num_m)
-            p_val = math.exp(-chi/2)
+            p_val = math.exp(-chi / 2)
             return p_val
         else:
             return -1.0
@@ -487,7 +496,8 @@ class RandomnessTester:
         """
         print(Colours.Bold + "\n\t Binary Matrix Rank Test" + Colours.End)
         p_val = self.matrix_rank(self.load_test_data("e")[:100000], 32)
-        if (p_val - 0.532069) < self.epsilon:
+        print("\t", "Expected = 0.532069", "Got =", "{0:.6f}".format(p_val))
+        if abs(p_val - 0.532069) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
@@ -514,25 +524,26 @@ class RandomnessTester:
                 plus_minus_one.append(1)
         # Product discrete fourier transform of plus minus one
         s = sff.fft(plus_minus_one)
-        modulus = numpy.abs(s[0:n/2])
-        tau = numpy.sqrt(numpy.log(1/0.05) * n)
+        modulus = numpy.abs(s[0:n / 2])
+        tau = numpy.sqrt(numpy.log(1 / 0.05) * n)
         # Theoretical number of peaks
         count_n0 = 0.95 * (n / 2)
         # Count the number of actual peaks m > T
         count_n1 = len(numpy.where(modulus < tau)[0])
         # Calculate d and return the p value statistic
-        d = (count_n1 - count_n0) / numpy.sqrt(n*0.95*0.05/4)
-        p_val = spc.erfc(abs(d)/numpy.sqrt(2))
+        d = (count_n1 - count_n0) / numpy.sqrt(n * 0.95 * 0.05 / 4)
+        p_val = spc.erfc(abs(d) / numpy.sqrt(2))
         return p_val
 
     def spectral_check(self):
         """
-        This is a test method for the binary matrix rank test based on the example in the NIST documentation
+        This is a test method for the spectral test based on the example in the NIST documentation
         """
         print(Colours.Bold + "\n\t Spectral Test" + Colours.End)
         p_val = self.spectral(self.load_test_data("test1"))
+        print("\t", "Expected = 0.646355195539", "Got =", "{0:.6f}".format(p_val))
         # Note I think the NIST example is wrong. This should not be 0.168669
-        if (p_val - 0.646355195539) < self.epsilon:
+        if abs(p_val - 0.646355195539) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
@@ -548,9 +559,9 @@ class RandomnessTester:
         search for a specific m-bit pattern. If the pattern is not found, the window slides one bit position. If the
         pattern is found, the window is reset to the bit after the found pattern, and the search resumes.
 
-        :param bin_data:
-        :param pattern:
-        :return:
+        :param bin_data: a binary string
+        :param pattern: the pattern to match to
+        :return: the p-value from the test
         """
         n = len(bin_data)
         pattern_size = len(pattern)
@@ -564,7 +575,7 @@ class RandomnessTester:
             # Count the number of pattern hits
             j = 0
             while j < block_size:
-                sub_block = block_data[j:j+pattern_size]
+                sub_block = block_data[j:j + pattern_size]
                 if sub_block == pattern:
                     pattern_counts[i] += 1
                     j += pattern_size
@@ -572,25 +583,29 @@ class RandomnessTester:
                     j += 1
         # Calculate the theoretical mean and variance
         mean = (block_size - pattern_size + 1) / pow(2, pattern_size)
-        var = block_size * ((1 / pow(2, pattern_size)) - (((2 * pattern_size) - 1)/(pow(2, pattern_size * 2))))
+        var = block_size * ((1 / pow(2, pattern_size)) - (((2 * pattern_size) - 1) / (pow(2, pattern_size * 2))))
         # Calculate the Chi Squared statistic for these pattern matches
         chi_squared = 0
         for i in range(num_blocks):
             chi_squared += pow(pattern_counts[i] - mean, 2.0) / var
         # Calculate and return the p value statistic
-        p_val = spc.gammaincc(num_blocks/2, chi_squared/2)
+        p_val = spc.gammaincc(num_blocks / 2, chi_squared / 2)
         return p_val
 
     def non_overlapping_patterns_check(self):
+        """
+        This is a test method for the non overlapping patterns test based on the example in the NIST documentation
+        """
         print(Colours.Bold + "\n\t Non Overlapping Patterns Test" + Colours.End)
         num_bits = pow(2, 20)
         p_val = self.non_overlapping_patterns(self.load_test_data("e")[:num_bits], "000000001")
-        if (p_val - 0.647302) < self.epsilon:
+        print("\t", "Expected = 0.647302", "Got =", "{0:.6f}".format(p_val))
+        if abs(p_val - 0.647302) < self.epsilon:
             print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
-    def overlapping_patterns(self, bin_data: str, pattern: str):
+    def overlapping_patterns(self, bin_data: str, pattern: str, block_size=1032):
         """
         Note that this description is taken from the NIST documentation [1]
         [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
@@ -601,17 +616,149 @@ class RandomnessTester:
         the window slides one bit position. The difference between this test and the test in Section 2.7 is that
         when the pattern is found, the window slides only one bit before resuming the search.
 
-        :param bin_data:
-        :param pattern:
-        :return:
+        :param bin_data: a binary string
+        :param pattern: the pattern to match to
+        :return: the p-value from the test
         """
-        pass
+        n = len(bin_data)
+        pattern_size = len(pattern)
+        num_blocks = math.floor(n / block_size)
+        lambda_val = float(block_size - pattern_size) / pow(2, pattern_size)
+        eta = lambda_val / 2.0
+
+        piks = numpy.zeros(5)
+        piks[0] = math.exp(-eta)
+        for i in range(1, 4):
+            piks[i] = eta * math.exp(2 * -eta) * (2 ** -eta) * spc.hyp1f1(i + 1, 2, eta)
+        piks[4] = 1.0 - piks.sum()
+
+        pattern_counts = numpy.zeros(5)
+        for i in range(num_blocks):
+            block_start = i * block_size
+            block_end = block_start + block_size
+            block_data = bin_data[block_start:block_end]
+            # Count the number of pattern hits
+            pattern_count = 0
+            j = 0
+            while j < block_size:
+                sub_block = block_data[j:j + pattern_size]
+                if sub_block == pattern:
+                    pattern_count += 1
+                    j += pattern_size
+                else:
+                    j += 1
+            if pattern_count <= 3:
+                pattern_counts[pattern_count] += 1
+            else:
+                pattern_counts[4] += 1
+
+        chi_squared = 0.0
+        for i in range(len(pattern_counts)):
+            chi_squared += pow(pattern_counts[i] - num_blocks * piks[i], 2.0) / (num_blocks * piks[i])
+        return spc.gammaincc(5.0 / 2.0, chi_squared / 2.0)
 
     def overlapping_patterns_check(self):
-        pass
+        """
+        This is a test method for the non overlapping patterns test based on the example in the NIST documentation
+        """
+        print(Colours.Bold + "\n\t Non Overlapping Patterns Test" + Colours.End)
+        p_val = self.overlapping_patterns(self.load_test_data("e")[:1000000], "111111111")
+        print("\t", "Expected = 0.110434", "Got =", "{0:.6f}".format(p_val))
+        if abs(p_val - 0.110434) < self.epsilon:
+            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
+        else:
+            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
 
-if __name__ == '__main__':
+class BinaryMatrix:
+    def __init__(self, matrix, rows, cols):
+        self.M = rows
+        self.Q = cols
+        self.A = matrix
+        self.m = min(rows, cols)
+
+    def compute_rank(self, verbose=False):
+        if verbose:
+            print("Original Matrix\n", self.A)
+
+        i = 0
+        while i < self.m - 1:
+            if self.A[i][i] == 1:
+                self.perform_row_operations(i, True)
+            else:
+                found = self.find_unit_element_swap(i, True)
+                if found == 1:
+                    self.perform_row_operations(i, True)
+            i += 1
+
+        if verbose:
+            print("Intermediate Matrix\n", self.A)
+
+        i = self.m - 1
+        while i > 0:
+            if self.A[i][i] == 1:
+                self.perform_row_operations(i, False)
+            else:
+                if self.find_unit_element_swap(i, False) == 1:
+                    self.perform_row_operations(i, False)
+            i -= 1
+
+        if verbose:
+            print("Final Matrix\n", self.A)
+
+        return self.determine_rank()
+
+    def perform_row_operations(self, i, forward_elimination):
+        if forward_elimination:
+            j = i + 1
+            while j < self.M:
+                if self.A[j][i] == 1:
+                    self.A[j, :] = (self.A[j, :] + self.A[i, :]) % 2
+                j += 1
+        else:
+            j = i - 1
+            while j >= 0:
+                if self.A[j][i] == 1:
+                    self.A[j, :] = (self.A[j, :] + self.A[i, :]) % 2
+                j -= 1
+
+    def find_unit_element_swap(self, i, forward_elimination):
+        row_op = 0
+        if forward_elimination:
+            index = i + 1
+            while index < self.M and self.A[index][i] == 0:
+                index += 1
+            if index < self.M:
+                row_op = self.swap_rows(i, index)
+        else:
+            index = i - 1
+            while index >= 0 and self.A[index][i] == 0:
+                index -= 1
+            if index >= 0:
+                row_op = self.swap_rows(i, index)
+        return row_op
+
+    def swap_rows(self, i, ix):
+        temp = copy.copy(self.A[i, :])
+        self.A[i, :] = self.A[ix, :]
+        self.A[ix, :] = temp
+        return 1
+
+    def determine_rank(self):
+        rank = self.m
+        i = 0
+        while i < self.M:
+            all_zeros = 1
+            for j in range(self.Q):
+                if self.A[i][j] == 1:
+                    all_zeros = 0
+            if all_zeros == 1:
+                rank -= 1
+            i += 1
+        return rank
+
+
+def test_randomness_tester():
     # bin, method, real_data, start_year, end_year, block_size
     rng_tester = RandomnessTester(None, "discretize", False, 00, 00)
     rng_tester.monobit_check()
@@ -621,3 +768,22 @@ if __name__ == '__main__':
     rng_tester.matrix_rank_check()
     rng_tester.spectral_check()
     rng_tester.non_overlapping_patterns_check()
+    rng_tester.overlapping_patterns_check()
+
+
+def test_binary_matrix():
+    data = [1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 1,
+            1, 0, 1, 0, 1, 0,
+            0, 0, 1, 0, 1, 1,
+            0, 0, 0, 0, 1, 0]
+    m = numpy.array(data)
+    m = m.reshape((6, 6))
+    ranker = BinaryMatrix(m, 6, 6)
+    print(ranker.compute_rank(verbose=True))
+
+
+if __name__ == '__main__':
+    test_randomness_tester()
+    test_binary_matrix()
