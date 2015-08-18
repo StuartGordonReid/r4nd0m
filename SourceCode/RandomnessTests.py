@@ -102,12 +102,13 @@ class RandomnessTester:
         # For each data set in self.bin
         for c in self.bin.columns:
             print(Colours.Bold + "\n\tRunning " + self.bin.method + " based tests on", c + Colours.End, "\n")
-            test_names = ["\tMonobit Test Results",
-                          "\tBlock Frequency Test",
-                          "\tIndependent Runs Test",
-                          "\tLongest Runs Test",
-                          "\tMatrix Rank Test",
-                          "\tSpectral Test"]
+            test_names = ["\t01. Monobit Test Results",
+                          "\t02. Block Frequency Test",
+                          "\t03. Independent Runs Test",
+                          "\t04. Longest Runs Test",
+                          "\t05. Matrix Rank Test",
+                          "\t06. Spectral Test",
+                          "\t07. Non Overlapping Patterns"]
 
             for i in range(len(test_names)):
                 length = len(test_names[i])
@@ -116,8 +117,8 @@ class RandomnessTester:
                 filler = filler.replace("0", " ")
                 test_names[i] += filler
 
-            pvals = [[], [], [], [], [], []]
-            pval_strings = ["", "", "", "", "", ""]
+            pvals = [[], [], [], [], [], [], [], []]
+            pval_strings = ["", "", "", "", "", "", "", ""]
 
             # Get the samples for the data set
             binary_strings = self.bin.bin_data[c]
@@ -149,6 +150,10 @@ class RandomnessTester:
                 pval_strings[5] += self.get_string(p_val)
                 pvals[5].append(p_val)
 
+                p_val = self.non_overlapping_patterns(str_data, "11110000")
+                pval_strings[6] += self.get_string(p_val)
+                pvals[6].append(p_val)
+
             # For each sample calculate the aggregate p_value and aggregate pass %
             aggregate_pvals, aggregate_pass = [], []
             for i in range(len(binary_strings)):
@@ -169,6 +174,9 @@ class RandomnessTester:
 
                 aggregate_pvals.append(self.get_aggregate_pval(pvals[5]))
                 aggregate_pass.append(self.get_aggregate_pass(pvals[5]))
+
+                aggregate_pvals.append(self.get_aggregate_pval(pvals[6]))
+                aggregate_pass.append(self.get_aggregate_pass(pvals[6]))
 
             # Print the results to the console
             self.print_dates(len(binary_strings))
@@ -459,18 +467,11 @@ class RandomnessTester:
                 block_start += block_size
                 block_end += block_size
 
-            piks = [0.0, 0.0, 0.0]
-            prob, r = 1.0, q
-            for i in range(r-1):
-                prob *= ((1.0-pow(2, i-q))*(1.0-pow(2, i-q)))/(1.0-pow(2, i-r))
-            piks[0] = pow(2, r*(q+q-r)-q*q) * prob
-
-            prob, r = 1.0, q - 1
-            for i in range(r - 1):
-                prob *= ((1.0-pow(2, i-q))*(1.0-pow(2, i-q)))/(1.0-pow(2, i-r))
-            piks[1] = pow(2, r*(32+32-r)-32*32) * prob
-
-            piks[2] = 1.0 - piks[1] - piks[0]
+            piks = [1.0, 0.0, 0.0]
+            for x in range(1, 50):
+                piks[0] *= 1 - (1.0/(2**x))
+            piks[1] = 2 * piks[0]
+            piks[2] = 1 - piks[0] - piks[1]
 
             chi = 0.0
             for i in range(len(piks)):
@@ -536,6 +537,79 @@ class RandomnessTester:
         else:
             print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
 
+    def non_overlapping_patterns(self, bin_data: str, pattern: str, num_blocks=8):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        The focus of this test is the number of occurrences of pre-specified target strings. The purpose of this
+        test is to detect generators that produce too many occurrences of a given non-periodic (aperiodic) pattern.
+        For this test and for the Overlapping Template Matching test of Section 2.8, an m-bit window is used to
+        search for a specific m-bit pattern. If the pattern is not found, the window slides one bit position. If the
+        pattern is found, the window is reset to the bit after the found pattern, and the search resumes.
+
+        :param bin_data:
+        :param pattern:
+        :return:
+        """
+        n = len(bin_data)
+        pattern_size = len(pattern)
+        block_size = math.floor(n / num_blocks)
+        pattern_counts = numpy.zeros(num_blocks)
+        # For each block in the data
+        for i in range(num_blocks):
+            block_start = i * block_size
+            block_end = block_start + block_size
+            block_data = bin_data[block_start:block_end]
+            # Count the number of pattern hits
+            j = 0
+            while j < block_size:
+                sub_block = block_data[j:j+pattern_size]
+                if sub_block == pattern:
+                    pattern_counts[i] += 1
+                    j += pattern_size
+                else:
+                    j += 1
+        # Calculate the theoretical mean and variance
+        mean = (block_size - pattern_size + 1) / pow(2, pattern_size)
+        var = block_size * ((1 / pow(2, pattern_size)) - (((2 * pattern_size) - 1)/(pow(2, pattern_size * 2))))
+        # Calculate the Chi Squared statistic for these pattern matches
+        chi_squared = 0
+        for i in range(num_blocks):
+            chi_squared += pow(pattern_counts[i] - mean, 2.0) / var
+        # Calculate and return the p value statistic
+        p_val = spc.gammaincc(num_blocks/2, chi_squared/2)
+        return p_val
+
+    def non_overlapping_patterns_check(self):
+        print(Colours.Bold + "\n\t Non Overlapping Patterns Test" + Colours.End)
+        num_bits = pow(2, 20)
+        p_val = self.non_overlapping_patterns(self.load_test_data("e")[:num_bits], "000000001")
+        if (p_val - 0.647302) < self.epsilon:
+            print("\t", Colours.Pass + Colours.Bold + "Passed Unit Test" + Colours.End)
+        else:
+            print("\t", Colours.Fail + Colours.Bold + "Failed Unit Test" + Colours.End)
+
+    def overlapping_patterns(self, bin_data: str, pattern: str):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        The focus of the Overlapping Template Matching test is the number of occurrences of pre-specified target
+        strings. Both this test and the Non-overlapping Template Matching test of Section 2.7 use an m-bit
+        window to search for a specific m-bit pattern. As with the test in Section 2.7, if the pattern is not found,
+        the window slides one bit position. The difference between this test and the test in Section 2.7 is that
+        when the pattern is found, the window slides only one bit before resuming the search.
+
+        :param bin_data:
+        :param pattern:
+        :return:
+        """
+        pass
+
+    def overlapping_patterns_check(self):
+        pass
+
 
 if __name__ == '__main__':
     # bin, method, real_data, start_year, end_year, block_size
@@ -546,3 +620,4 @@ if __name__ == '__main__':
     rng_tester.longest_runs_check()
     rng_tester.matrix_rank_check()
     rng_tester.spectral_check()
+    rng_tester.non_overlapping_patterns_check()
