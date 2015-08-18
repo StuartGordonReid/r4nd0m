@@ -2,9 +2,6 @@ import math
 import bitstring
 
 
-# TODO: Add more comments to this file
-
-
 class BinaryFrame:
     def __init__(self, data, start, end, years_per_block):
         """

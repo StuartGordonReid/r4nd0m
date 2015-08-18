@@ -1,14 +1,13 @@
-import csv
+
 import os
-import random as sysrandom
-
-import pandas
+import csv
 import numpy
-from Crypto.Random import random
+import pandas
 
-from SourceCode.DataDownloader import QuandlInterface, Argument
-from SourceCode.RandomnessTests import RandomnessTester
+from SourceCode.Generators import Generators
 from SourceCode.BinaryFrame import BinaryFrame
+from SourceCode.RandomnessTests import RandomnessTester
+from SourceCode.DataDownloader import QuandlInterface, Argument
 
 
 # TODO: Add better comments to this file
@@ -54,29 +53,6 @@ def construct_binary_frame(data_sets, method, token, start, end, years_per_block
     return binary_frame
 
 
-def numpy_float_random(length):
-    return numpy.random.uniform(low=0.0, high=1.0, size=length)
-
-
-def numpy_random(length):
-    return numpy.random.randint(low=-250, high=250, size=length)
-
-
-def system_random(length):
-    rng = sysrandom.SystemRandom()
-    nrng = []
-    for x in range(length):
-        nrng.append(rng.randint(-250, 250))
-    return nrng
-
-
-def crypto_random(length):
-    nrng = []
-    for x in range(length):
-        nrng.append(random.randint(-250, 250))
-    return nrng
-
-
 def run_experiments(data_sets, block_sizes, q_sizes, methods, start, end, years_per_block):
     breaker = "".zfill(200)
     breaker = breaker.replace('0', '*')
@@ -85,7 +61,8 @@ def run_experiments(data_sets, block_sizes, q_sizes, methods, start, end, years_
         print("METHOD =", method.upper())
 
         length = 256 * (end - start)
-        prng = numpy_random(length)
+        gen = Generators(length)
+        prng = gen.crypto_integer()
 
         prng_data = pandas.DataFrame(numpy.array(prng))
         prng_data.columns = ["Mersenne"]
@@ -126,7 +103,7 @@ if __name__ == '__main__':
     # , "convert basis point", "convert floating point"]
     run_experiments(os.path.join("MetaData", ".1900 plus.csv"), 128, 16, m, 1900, 2015, 10.0)
     run_experiments(os.path.join("MetaData", ".1950 plus.csv"), 128, 16, m, 1950, 2015, 10.0)
-    run_experiments(os.path.join("MetaData", ".1960 plus.csv"), 128, 16, m, 1950, 2015, 10.0)
-    run_experiments(os.path.join("MetaData", ".1970 plus.csv"), 128, 16, m, 1950, 2015, 10.0)
-    run_experiments(os.path.join("MetaData", ".1990 plus.csv"), 128, 16, m, 1950, 2015, 10.0)
+    run_experiments(os.path.join("MetaData", ".1960 plus.csv"), 128, 16, m, 1960, 2015, 10.0)
+    run_experiments(os.path.join("MetaData", ".1970 plus.csv"), 128, 16, m, 1970, 2015, 10.0)
+    run_experiments(os.path.join("MetaData", ".1990 plus.csv"), 128, 16, m, 1990, 2015, 10.0)
     clean_up()
