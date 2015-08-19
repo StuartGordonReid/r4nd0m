@@ -8,10 +8,6 @@ import copy
 import os
 
 
-# TODO: Complete the rest of the Randomness Tests
-# TODO: Remove expensive 'partitioning approach' to blocks
-
-
 class Colours:
     """
     Just used to make the standard-out a little bit less ugly
