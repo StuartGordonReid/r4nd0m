@@ -216,6 +216,39 @@ class RandomnessTester:
             print("File not found", path, "exiting")
             exit(0)
 
+    def generic_checker(self, test_name, expected, function):
+        """
+        This is a generic method for checking the outputs from one of the tests against known outputs to ensure that the
+        test if acting as expected. Essentially it is a unit tester.
+        :param test_name: the name of the test being checked
+        :param expected: a list of expected p-values
+        :param function: a reference to the function being checked
+        """
+        print("\n\t", Colours.Bold + test_name + Colours.End)
+        data_sets = ["pi", "e", "sqrt2", "sqrt3"]
+        for i in range(len(data_sets)):
+            p_val = function(self.load_test_data(data_sets[i])[:1000000])
+            data_set_label = "".zfill(10 - len(data_sets[i])).replace("0", " ")
+            if abs(p_val - expected[i]) < self.epsilon:
+                print("\t", Colours.Pass + data_sets[i], data_set_label, "\tp expected = ", expected[i],
+                      "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
+            else:
+                print("\t", Colours.Fail + data_sets[i], data_set_label, "\tp expected = ", expected[i],
+                      "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
+
+    def test_randomness_tester(self):
+        """
+        This method calls the method calls each one of the checks of the randomness tests contained in this class
+        """
+        self.monobit_check()
+        self.block_frequency_check()
+        self.independent_runs_check()
+        self.longest_runs_check()
+        self.matrix_rank_check()
+        self.spectral_check()
+        self.non_overlapping_patterns_check()
+        self.overlapping_patterns_check()
+
     def zeros_and_ones_count(self, str_data: str):
         """
         This is just a simple method for counting zeros and ones
@@ -255,22 +288,6 @@ class RandomnessTester:
         sobs = count / math.sqrt(len(bin_data))
         p_val = spc.erfc(math.fabs(sobs) / math.sqrt(2))
         return p_val
-
-    def generic_checker(self, test_name, expected, function):
-        """
-        This is a test method for the monobit test method based on the example in the NIST documentation
-        """
-        print("\n\t", Colours.Bold + test_name + Colours.End)
-        data_sets = ["pi", "e", "sqrt2", "sqrt3"]
-        for i in range(len(data_sets)):
-            p_val = function(self.load_test_data(data_sets[i])[:1000000])
-            data_set_label = "".zfill(10 - len(data_sets[i])).replace("0", " ")
-            if abs(p_val - expected[i]) < self.epsilon:
-                print("\t", Colours.Pass + data_sets[i], data_set_label, "\tp expected = ", expected[i],
-                      "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
-            else:
-                print("\t", Colours.Fail + data_sets[i], data_set_label, "\tp expected = ", expected[i],
-                      "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
 
     def monobit_check(self):
         """
@@ -652,12 +669,25 @@ class RandomnessTester:
 
 class BinaryMatrix:
     def __init__(self, matrix, rows, cols):
+        """
+        This class contains the algorithm specified in the NIST suite for computing the **binary rank** of a matrix.
+        :param matrix: the matrix we want to compute the rank for
+        :param rows: the number of rows
+        :param cols: the number of columns
+        :return: a BinaryMatrix object
+        """
         self.M = rows
         self.Q = cols
         self.A = matrix
         self.m = min(rows, cols)
 
     def compute_rank(self, verbose=False):
+        """
+        This method computes the binary rank of self.matrix
+        :param verbose: if this is true it prints out the matrix after the forward elimination and backward elimination
+        operations on the rows. This was used to testing the method to check it is working as expected.
+        :return: the rank of the matrix.
+        """
         if verbose:
             print("Original Matrix\n", self.A)
 
@@ -689,6 +719,12 @@ class BinaryMatrix:
         return self.determine_rank()
 
     def perform_row_operations(self, i, forward_elimination):
+        """
+        This method performs the elementary row operations. This involves xor'ing up to two rows together depending on
+        whether or not certain elements in the matrix contain 1's if the "current" element does not.
+        :param i: the current index we are are looking at
+        :param forward_elimination: True or False.
+        """
         if forward_elimination:
             j = i + 1
             while j < self.M:
@@ -703,6 +739,12 @@ class BinaryMatrix:
                 j -= 1
 
     def find_unit_element_swap(self, i, forward_elimination):
+        """
+        This given an index which does not contain a 1 this searches through the rows below the index to see which rows
+        contain 1's, if they do then they swapped. This is done on the forward and backward elimination
+        :param i: the current index we are looking at
+        :param forward_elimination: True or False.
+        """
         row_op = 0
         if forward_elimination:
             index = i + 1
@@ -719,12 +761,22 @@ class BinaryMatrix:
         return row_op
 
     def swap_rows(self, i, ix):
+        """
+        This method just swaps two rows in a matrix. Had to use the copy package to ensure no memory leakage
+        :param i: the first row we want to swap and
+        :param ix: the row we want to swap it with
+        :return: 1
+        """
         temp = copy.copy(self.A[i, :])
         self.A[i, :] = self.A[ix, :]
         self.A[ix, :] = temp
         return 1
 
     def determine_rank(self):
+        """
+        This method determines the rank of the transformed matrix
+        :return: the rank of the transformed matrix
+        """
         rank = self.m
         i = 0
         while i < self.M:
@@ -738,20 +790,12 @@ class BinaryMatrix:
         return rank
 
 
-def test_randomness_tester():
-    # bin, method, real_data, start_year, end_year, block_size
-    rng_tester = RandomnessTester(None, "discretize", False, 00, 00)
-    rng_tester.monobit_check()
-    rng_tester.block_frequency_check()
-    rng_tester.independent_runs_check()
-    rng_tester.longest_runs_check()
-    rng_tester.matrix_rank_check()
-    rng_tester.spectral_check()
-    rng_tester.non_overlapping_patterns_check()
-    rng_tester.overlapping_patterns_check()
-
-
 def test_binary_matrix():
+    """
+    This is just a silly method for testing the matrix rank class. It is redundant since the Binary Matrix Rank test
+    passes the unit tests on the test data anyway ... still useful to keep around though.
+    :return:
+    """
     data = [1, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 1,
             1, 0, 0, 0, 0, 1,
@@ -765,5 +809,5 @@ def test_binary_matrix():
 
 
 if __name__ == '__main__':
-    test_randomness_tester()
-    # test_binary_matrix()
+    rng_tester = RandomnessTester(None, "discretize", False, 00, 00)
+    rng_tester.check_tests()

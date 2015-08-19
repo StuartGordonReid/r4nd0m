@@ -1,4 +1,3 @@
-
 import os
 import csv
 import numpy
@@ -10,12 +9,12 @@ from SourceCode.RandomnessTests import RandomnessTester
 from SourceCode.DataDownloader import QuandlInterface, Argument
 
 
-# TODO: Add better comments to this file
-# TODO: Identify more markets to include in study
-# TODO: Move Random Number Generators into Separate Class
-
-
 def setup_environment():
+    """
+    This method just "sets up" your environment to run the program. It handles HTTP and HTTPS proxies and the Quandl
+    authentication token. This information is read from a .private.csv file in the MetaData folder
+    :return: the authentication token from Quandl
+    """
     token = ""
     try:
         with open(os.path.join("MetaData", ".private.csv"), "r") as csvfile:
@@ -33,6 +32,17 @@ def setup_environment():
 
 
 def construct_binary_frame(data_sets, method, token, start, end, years_per_block):
+    """
+    This method is used to construct a BinaryFrame object from a meta-data file which specifies what data sets we want
+    to download and what columns we are interested in from that data.
+    :param data_sets: the file containing the data sets we want
+    :param method: the method of conversion to binary
+    :param token: a Quandl authentication token
+    :param start: the start date
+    :param end: the end date
+    :param years_per_block: the time frame / dimension we want to look at
+    :return: a BinaryFrame object which can work with the RandomnessTester class
+    """
     downloader = QuandlInterface(token)
     data_file = pandas.read_csv(data_sets)
     data_sets = list(data_file["ID"])
@@ -54,6 +64,17 @@ def construct_binary_frame(data_sets, method, token, start, end, years_per_block
 
 
 def run_experiments(data_sets, block_sizes, q_sizes, methods, start, end, years_per_block):
+    """
+    This method just runs the experiments which were used to write the blog post
+    :param data_sets: the file containing a list of data sets we want
+    :param block_sizes: a list of block sizes
+    :param q_sizes: a list of matrix sizes
+    :param start: the start date
+    :param end: the end date
+    :param methods: the methods of conversion to binary we want to test
+    :param years_per_block: the time frame / dimension we want to look at
+    :return: nothing just prints out stuff
+    """
     breaker = "".zfill(200)
     breaker = breaker.replace('0', '*')
     for method in methods:
@@ -92,6 +113,10 @@ def run_experiments(data_sets, block_sizes, q_sizes, methods, start, end, years_
 
 
 def clean_up():
+    """
+    This just removes the Quandl authentication token pickle from the system
+    :return: nothing
+    """
     try:
         os.remove("authtoken.p")
     except FileNotFoundError:
