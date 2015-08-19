@@ -110,7 +110,9 @@ class RandomnessTester:
                           "\t04. Longest Runs Test",
                           "\t05. Matrix Rank Test",
                           "\t06. Spectral Test",
-                          "\t07. Non Overlapping Patterns"]
+                          "\t07. Non Overlapping Patterns",
+                          "\t08. Overlapping Patterns",
+                          "\t09. Universal Test"]
 
             for i in range(len(test_names)):
                 length = len(test_names[i])
@@ -119,8 +121,8 @@ class RandomnessTester:
                 filler = filler.replace("0", " ")
                 test_names[i] += filler
 
-            pvals = [[], [], [], [], [], [], [], []]
-            pval_strings = ["", "", "", "", "", "", "", ""]
+            pvals = [[], [], [], [], [], [], [], [], [], []]
+            pval_strings = ["", "", "", "", "", "", "", "", "", ""]
 
             # Get the samples for the data set
             binary_strings = self.bin.bin_data[c]
@@ -156,29 +158,20 @@ class RandomnessTester:
                 pval_strings[6] += self.get_string(p_val)
                 pvals[6].append(p_val)
 
+                p_val = self.overlapping_patterns(str_data)
+                pval_strings[7] += self.get_string(p_val)
+                pvals[7].append(p_val)
+
+                p_val = self.universal(str_data)
+                pval_strings[8] += self.get_string(p_val)
+                pvals[8].append(p_val)
+
             # For each sample calculate the aggregate p_value and aggregate pass %
             aggregate_pvals, aggregate_pass = [], []
             for i in range(len(binary_strings)):
-                aggregate_pvals.append(self.get_aggregate_pval(pvals[0]))
-                aggregate_pass.append(self.get_aggregate_pass(pvals[0]))
-
-                aggregate_pvals.append(self.get_aggregate_pval(pvals[1]))
-                aggregate_pass.append(self.get_aggregate_pass(pvals[1]))
-
-                aggregate_pvals.append(self.get_aggregate_pval(pvals[2]))
-                aggregate_pass.append(self.get_aggregate_pass(pvals[2]))
-
-                aggregate_pvals.append(self.get_aggregate_pval(pvals[3]))
-                aggregate_pass.append(self.get_aggregate_pass(pvals[3]))
-
-                aggregate_pvals.append(self.get_aggregate_pval(pvals[4]))
-                aggregate_pass.append(self.get_aggregate_pass(pvals[4]))
-
-                aggregate_pvals.append(self.get_aggregate_pval(pvals[5]))
-                aggregate_pass.append(self.get_aggregate_pass(pvals[5]))
-
-                aggregate_pvals.append(self.get_aggregate_pval(pvals[6]))
-                aggregate_pass.append(self.get_aggregate_pass(pvals[6]))
+                for j in range(len(pvals)):
+                    aggregate_pvals.append(self.get_aggregate_pval(pvals[j]))
+                    aggregate_pass.append(self.get_aggregate_pass(pvals[j]))
 
             # Print the results to the console
             self.print_dates(len(binary_strings))
@@ -248,6 +241,7 @@ class RandomnessTester:
         self.spectral_check()
         self.non_overlapping_patterns_check()
         self.overlapping_patterns_check()
+        self.universal_check()
 
     def zeros_and_ones_count(self, str_data: str):
         """
@@ -600,7 +594,7 @@ class RandomnessTester:
         """
         This is a test method for the non overlapping patterns test based on the example in the NIST documentation
         """
-        expected = [0.165757, 0.496601, 0.569461, 0.532235]
+        expected = [0.165757, 0.078790, 0.569461, 0.532235]
         self.generic_checker("Check Non Overlapping Patterns Test", expected, self.non_overlapping_patterns)
 
     def overlapping_patterns(self, bin_data: str, pattern_size=9, block_size=1032):
@@ -665,6 +659,101 @@ class RandomnessTester:
         """
         expected = [0.296897, 0.110434, 0.791982, 0.082716]
         self.generic_checker("Check Overlapping Patterns Test", expected, self.overlapping_patterns)
+
+    def universal(self, bin_data: str):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        The focus of this test is the number of bits between matching patterns (a measure that is related to the
+        length of a compressed sequence). The purpose of the test is to detect whether or not the sequence can be
+        significantly compressed without loss of information. A significantly compressible sequence is considered
+        to be non-random. **This test is always skipped because the requirements on the lengths of the binary
+        strings are too high i.e. there have not been enough trading days to meet the requirements.
+
+        :param bin_data: a binary string
+        :return: the p-value from the test
+        """
+        # The below table is less relevant for us traders and markets than it is for security people
+        n = len(bin_data)
+        pattern_size = 5
+        if n >= 387840:
+            pattern_size = 6
+        if n >= 904960:
+            pattern_size = 7
+        if n >= 2068480:
+            pattern_size = 8
+        if n >= 4654080:
+            pattern_size = 9
+        if n >= 10342400:
+            pattern_size = 10
+        if n >= 22753280:
+            pattern_size = 11
+        if n >= 49643520:
+            pattern_size = 12
+        if n >= 107560960:
+            pattern_size = 13
+        if n >= 231669760:
+            pattern_size = 14
+        if n >= 496435200:
+            pattern_size = 15
+        if n >= 1059061760:
+            pattern_size = 16
+
+        if 5 < pattern_size < 16:
+            # Create the biggest binary string of length pattern_size
+            ones = ""
+            for i in range(pattern_size):
+                ones += "1"
+
+            # How long the state list should be
+            num_ints = int(ones, 2)
+            vobs = numpy.zeros(num_ints + 1)
+
+            # Keeps track of the blocks, and whether were are initializing or summing
+            num_blocks = math.floor(n / pattern_size)
+            init_bits = 10 * pow(2, pattern_size)
+            test_bits = num_blocks - init_bits
+
+            # These are the expected values assuming randomness (uniform)
+            c = 0.7 - 0.8 / pattern_size + (4 + 32 / pattern_size) * pow(test_bits, -3/pattern_size)/15
+            variance = [0, 0, 0, 0, 0, 0, 2.954, 3.125, 3.238, 3.311, 3.356, 3.384, 3.401, 3.410, 3.416, 3.419, 3.421]
+            expected = [0, 0, 0, 0, 0, 0, 5.2177052, 6.1962507, 7.1836656, 8.1764248, 9.1723243,
+                        10.170032, 11.168765, 12.168070, 13.167693, 14.167488, 15.167379]
+            sigma = c * math.sqrt(variance[pattern_size]/test_bits)
+
+            cumsum = 0.0
+            for i in range(num_blocks):
+                block_start = i * pattern_size
+                block_end = block_start + pattern_size
+                block_data = bin_data[block_start: block_end]
+                # Work out what state we are in
+                int_rep = int(block_data, 2)
+
+                # Initialize the state list
+                if i < init_bits:
+                    vobs[int_rep] = i + 1
+                else:
+                    initial = vobs[int_rep]
+                    vobs[int_rep] = i + 1
+                    cumsum += math.log(i - initial + 1, 2)
+
+            # Calculate the statistic
+            phi = float(cumsum / test_bits)
+            stat = abs(phi - expected[pattern_size])/(float(math.sqrt(2)) * sigma)
+            p_val = spc.erfc(stat)
+            return p_val
+        else:
+            return -1.0
+
+    def universal_check(self):
+        """
+        This is a test method for the universal test based on the examples in the NIST documentation
+        """
+        # data = "01011010011101010111"
+        # p = self.universal(data)
+        expected = [0.669012, 0.282568, 0.130805, 0.165981]
+        self.generic_checker("Check Universal Test", expected, self.universal)
 
 
 class BinaryMatrix:
@@ -810,4 +899,4 @@ def test_binary_matrix():
 
 if __name__ == '__main__':
     rng_tester = RandomnessTester(None, "discretize", False, 00, 00)
-    rng_tester.check_tests()
+    rng_tester.test_randomness_tester()
