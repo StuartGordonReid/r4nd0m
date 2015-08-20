@@ -130,7 +130,7 @@ class RandomnessTester:
                 pval_strings[0] += self.get_string(p_val)
                 pvals[0].append(p_val)
 
-                p_val = self.block_frequency(str_data, block_size)
+                p_val = self.block_frequency(str_data, block_size=block_size)
                 pval_strings[1] += self.get_string(p_val)
                 pvals[1].append(p_val)
 
@@ -154,7 +154,7 @@ class RandomnessTester:
                 pval_strings[6] += self.get_string(p_val)
                 pvals[6].append(p_val)
 
-                p_val = self.overlapping_patterns(str_data)
+                p_val = self.overlapping_patterns(str_data, block_size=block_size)
                 pval_strings[7] += self.get_string(p_val)
                 pvals[7].append(p_val)
 
@@ -202,6 +202,7 @@ class RandomnessTester:
                     raw_data += line.replace("\n", "").replace("\t", "").replace(" ", "")
             return raw_data
         except FileNotFoundError:
+            path = os.path.join(os.getcwd(), os.pardir, "TestData", data_set)
             print("File not found", path, "exiting")
             exit(0)
 
@@ -229,15 +230,16 @@ class RandomnessTester:
         """
         This method calls the method calls each one of the checks of the randomness tests contained in this class
         """
-        self.monobit_check()
-        self.block_frequency_check()
-        self.independent_runs_check()
-        self.longest_runs_check()
-        self.matrix_rank_check()
-        self.spectral_check()
-        self.non_overlapping_patterns_check()
-        self.overlapping_patterns_check()
-        self.universal_check()
+        # self.monobit_check()
+        # self.block_frequency_check()
+        # self.independent_runs_check()
+        # self.longest_runs_check()
+        # self.matrix_rank_check()
+        # self.spectral_check()
+        # self.non_overlapping_patterns_check()
+        # self.overlapping_patterns_check()
+        # self.universal_check()
+        self.linear_complexity_check()
 
     def zeros_and_ones_count(self, str_data: str):
         """
@@ -641,12 +643,12 @@ class RandomnessTester:
         chi_squared = 0.0
         for i in range(len(pattern_counts)):
             chi_squared += pow(pattern_counts[i] - num_blocks * piks[i], 2.0) / (num_blocks * piks[i])
-        return spc.gammaincc(5.0/2.0, chi_squared/2.0)
+        return spc.gammaincc(5.0 / 2.0, chi_squared / 2.0)
 
     def get_prob(self, u, x):
         out = 1.0 * numpy.exp(-x)
         if u != 0:
-            out = 1.0 * x * numpy.exp(2*-x) * (2**-u) * spc.hyp1f1(u + 1, 2, x)
+            out = 1.0 * x * numpy.exp(2 * -x) * (2 ** -u) * spc.hyp1f1(u + 1, 2, x)
         return out
 
     def overlapping_patterns_check(self):
@@ -712,11 +714,11 @@ class RandomnessTester:
             test_bits = num_blocks - init_bits
 
             # These are the expected values assuming randomness (uniform)
-            c = 0.7 - 0.8 / pattern_size + (4 + 32 / pattern_size) * pow(test_bits, -3/pattern_size)/15
+            c = 0.7 - 0.8 / pattern_size + (4 + 32 / pattern_size) * pow(test_bits, -3 / pattern_size) / 15
             variance = [0, 0, 0, 0, 0, 0, 2.954, 3.125, 3.238, 3.311, 3.356, 3.384, 3.401, 3.410, 3.416, 3.419, 3.421]
             expected = [0, 0, 0, 0, 0, 0, 5.2177052, 6.1962507, 7.1836656, 8.1764248, 9.1723243,
                         10.170032, 11.168765, 12.168070, 13.167693, 14.167488, 15.167379]
-            sigma = c * math.sqrt(variance[pattern_size]/test_bits)
+            sigma = c * math.sqrt(variance[pattern_size] / test_bits)
 
             cumsum = 0.0
             for i in range(num_blocks):
@@ -736,7 +738,7 @@ class RandomnessTester:
 
             # Calculate the statistic
             phi = float(cumsum / test_bits)
-            stat = abs(phi - expected[pattern_size])/(float(math.sqrt(2)) * sigma)
+            stat = abs(phi - expected[pattern_size]) / (float(math.sqrt(2)) * sigma)
             p_val = spc.erfc(stat)
             return p_val
         else:
@@ -746,10 +748,93 @@ class RandomnessTester:
         """
         This is a test method for the universal test based on the examples in the NIST documentation
         """
-        # data = "01011010011101010111"
-        # p = self.universal(data)
         expected = [0.669012, 0.282568, 0.130805, 0.165981]
         self.generic_checker("Check Universal Test", expected, self.universal)
+
+    def linear_complexity(self, bin_data, block_size=500):
+        dof = 6
+        n = len(bin_data)
+        piks = [0.01047, 0.03125, 0.125, 0.5, 0.25, 0.0625, 0.020833]
+
+        parity = (block_size+1) % 2
+        if parity == 0:
+            sign = -1
+        else:
+            sign = 1
+
+        mean = block_size/2.0 + (9.0+sign)/36.0 - 1.0/pow(2, block_size) * (block_size/3.0 + 2.0/9.0)
+        num_blocks = math.floor(n / block_size)
+
+        parity = block_size % 2
+        if parity == 0:
+            sign = 1
+        else:
+            sign = -1
+
+        vobs = numpy.zeros(dof+1)
+        block_start = 0
+        block_end = block_start + block_size
+        for i in range(num_blocks):
+            block_data = bin_data[block_start:block_end]
+            complexity = self.berlekamp_massey_algorithms(block_data)
+            t = sign * (complexity - mean) + 2.0/9.0
+
+            if t <= -2.5:
+                vobs[0] += 1
+            elif -2.5 < t <= -1.5:
+                vobs[1] += 1
+            elif -1.5 < t <= -0.5:
+                vobs[2] += 1
+            elif -0.5 < t <= 0.5:
+                vobs[3] += 1
+            elif 0.5 < t <= 1.5:
+                vobs[4] += 1
+            elif 1.5 < t <= 2.5:
+                vobs[5] += 1
+            else:
+                vobs[6] += 1
+
+            block_start += block_size
+            block_end = block_start + block_size
+
+        chi_squared = 0.0
+        for i in range(len(piks)):
+            chi_squared += pow(vobs[i] - block_size * piks[i], 2.0) / (block_size * piks[i])
+        p_val = spc.gammaincc(dof / 2.0, chi_squared / 2.0)
+        return p_val
+
+    def berlekamp_massey_algorithms(self, block_data):
+        n = len(block_data)
+        c = numpy.zeros(n)
+        b = numpy.zeros(n)
+        c[0], b[0] = 1, 1
+        l, m, i = 0, -1, 0
+        int_data = [int(el) for el in block_data]
+        while i < n:
+            v = int_data[(i - l):i]
+            v.reverse()
+            cc = c[1:l + 1]
+            d = (int_data[i] + numpy.dot(v, cc)) % 2
+            if d == 1:
+                temp = c
+                p = numpy.zeros(n)
+                for j in range(0, l):
+                    if b[j] == 1:
+                        p[j + i - m] = 1
+                c = (c + p) % 2
+                if l <= 0.5 * i:
+                    l = i + 1 - l
+                    m = i
+                    b = temp
+            i += 1
+        return l
+
+    def linear_complexity_check(self):
+        """
+        This is a test method for the linear complexity test based on the examples in the NIST documentation
+        """
+        expected = [0.255475, 0.826335, 0.317127, 0.346469]
+        self.generic_checker("Check Linear Complexity Test", expected, self.linear_complexity)
 
 
 class BinaryMatrix:
