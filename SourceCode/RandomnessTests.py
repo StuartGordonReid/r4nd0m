@@ -97,6 +97,7 @@ class RandomnessTester:
         :param block_size: the length of each block to look at for each bit string
         :param q_size: the size of the matrix to look at for each bit string
         """
+        tests_passed = []
         # For each data set in self.bin
         for c in self.bin.columns:
             print(Colours.Bold + "\n\tRunning " + self.bin.method + " based tests on", c + Colours.End, "\n")
@@ -174,12 +175,14 @@ class RandomnessTester:
                     aggregate_pvals.append(self.get_aggregate_pval(pvals[j]))
                     aggregate_pass.append(self.get_aggregate_pass(pvals[j]))
 
+            tests_passed_this = 0
             # Print the results to the console
             self.print_dates(len(binary_strings))
             for i in range(len(test_names)):
                 pass_string = Colours.Bold + Colours.Fail + "FAIL!\t" + Colours.End
                 if aggregate_pass[i] >= 0.96:
                     pass_string = Colours.Bold + Colours.Pass + "PASS!\t" + Colours.End
+                    tests_passed_this += 1
                 if (numpy.array(pvals[i]) == -1.0).sum() > 0:
                     pass_string = Colours.Bold + "SKIP!\t" + Colours.End
 
@@ -192,6 +195,9 @@ class RandomnessTester:
                     pval_string = "p=SKIPPED\t"
 
                 print(test_names[i] + pass_string + pval_string + pval_strings[i])
+
+            tests_passed.append(tests_passed_this)
+        return tests_passed
 
     def load_test_data(self, data_set):
         """

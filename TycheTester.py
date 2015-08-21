@@ -63,7 +63,7 @@ def construct_binary_frame(data_sets, method, token, start, end, years_per_block
     return binary_frame
 
 
-def run_experiments(data_sets, block_sizes, q_sizes, methods, start, end, years_per_block):
+def run_experiments(data_sets, block_sizes, q_sizes, method, start, end, years_per_block):
     """
     This method just runs the experiments which were used to write the blog post
     :param data_sets: the file containing a list of data sets we want
@@ -77,39 +77,48 @@ def run_experiments(data_sets, block_sizes, q_sizes, methods, start, end, years_
     """
     breaker = "".zfill(200)
     breaker = breaker.replace('0', '*')
-    for method in methods:
-        print("\n" + breaker)
-        print("METHOD =", method.upper())
 
-        length = 256 * (end - start)
-        gen = Generators(length)
-        prng = gen.numpy_integer()
-
-        prng_data = pandas.DataFrame(numpy.array(prng))
-        prng_data.columns = ["Mersenne"]
-        prng_binary_frame = BinaryFrame(prng_data, start, end, years_per_block)
-        prng_binary_frame.convert(method, convert=False)
-        # method, real_data, start_year, end_year, block_size
-        rng_tester = RandomnessTester(prng_binary_frame, method, False, 00, 00)
-        rng_tester.run_test_suite(block_sizes, q_sizes)
-
-        nrand = numpy.empty(length)
-        for i in range(length):
-            nrand[i] = (i % 10) / 10
-        nrand -= numpy.mean(nrand)
-        nrand_data = pandas.DataFrame(numpy.array(nrand))
-        nrand_data.columns = ["Deterministic"]
-        nrand_binary_frame = BinaryFrame(nrand_data, start, end, years_per_block)
-        nrand_binary_frame.convert(method, convert=True)
-        rng_tester = RandomnessTester(nrand_binary_frame, method, False, 00, 00)
-        rng_tester.run_test_suite(block_sizes, q_sizes)
-
-        t = setup_environment()
-        my_binary_frame = construct_binary_frame(data_sets, method, t, start, end, years_per_block)
-        rng_tester = RandomnessTester(my_binary_frame, method, True, start, end)
-        # my_binary_frame = construct_long_binary_frame(method, stream_length)
-        rng_tester.run_test_suite(block_sizes, q_sizes)
     print("\n" + breaker)
+    print("METHOD =", method.upper())
+
+    length = 256 * (end - start)
+    gen = Generators(length)
+    prng = gen.numpy_integer()
+
+    all_passed = []
+    prng_data = pandas.DataFrame(numpy.array(prng))
+    prng_data.columns = ["Mersenne"]
+    prng_binary_frame = BinaryFrame(prng_data, start, end, years_per_block)
+    prng_binary_frame.convert(method, convert=False)
+    # method, real_data, start_year, end_year, block_size
+    rng_tester = RandomnessTester(prng_binary_frame, method, False, 00, 00)
+    passed = rng_tester.run_test_suite(block_sizes, q_sizes)
+    for x in passed:
+        all_passed.append(x)
+
+    nrand = numpy.empty(length)
+    for i in range(length):
+        nrand[i] = (i % 10) / 10
+    nrand -= numpy.mean(nrand)
+    nrand_data = pandas.DataFrame(numpy.array(nrand))
+    nrand_data.columns = ["Deterministic"]
+    nrand_binary_frame = BinaryFrame(nrand_data, start, end, years_per_block)
+    nrand_binary_frame.convert(method, convert=True)
+    rng_tester = RandomnessTester(nrand_binary_frame, method, False, 00, 00)
+    passed = rng_tester.run_test_suite(block_sizes, q_sizes)
+    for x in passed:
+        all_passed.append(x)
+
+    t = setup_environment()
+    my_binary_frame = construct_binary_frame(data_sets, method, t, start, end, years_per_block)
+    rng_tester = RandomnessTester(my_binary_frame, method, True, start, end)
+    # my_binary_frame = construct_long_binary_frame(method, stream_length)
+    passed = rng_tester.run_test_suite(block_sizes, q_sizes)
+    for x in passed:
+        all_passed.append(x)
+
+    print("\n" + breaker)
+    return all_passed
 
 
 def clean_up():
@@ -124,12 +133,21 @@ def clean_up():
 
 
 if __name__ == '__main__':
-    m = ["discretize"]
-    # , "convert basis point", "convert floating point"]
-    # run_experiments(os.path.join("MetaData", ".1900 plus.csv"), 128, 16, m, 1900, 2015, 5.0)
-    # run_experiments(os.path.join("MetaData", ".1950 plus.csv"), 64, 4, m, 1950, 2015, 5.0)
-    # run_experiments(os.path.join("MetaData", ".1960 plus.csv"), 128, 16, m, 1960, 2015, 5.0)
-    # run_experiments(os.path.join("MetaData", ".1970 plus.csv"), 128, 16, m, 1970, 2015, 5.0)
-    # run_experiments(os.path.join("MetaData", ".1990 plus.csv"), 64, 4, m, 1990, 2015, 7.0)
-    run_experiments(os.path.join("MetaData", ".yields.csv"), 64, 4, m, 1985, 2015, 5.0)
+    m = "discretize"
+    # "convert basis point"
+    # "convert floating point"
+
+    start_year, end_year = 1950, 2015
+    file_name = "." + str(start_year) + " plus.csv"
+
+    least_random_fit = 15
+    least_random_interval = 1
+    for interval in range(1, 15):
+        path = os.path.join("MetaData", file_name)
+        passed = run_experiments(path, 64, 4, m, start_year, end_year, interval)
+        passed_avg = numpy.array(passed[2::]).mean()
+        if passed_avg < least_random_fit:
+            least_random_fit = passed_avg
+            least_random_interval = interval
+    print(least_random_interval, least_random_fit)
     clean_up()
