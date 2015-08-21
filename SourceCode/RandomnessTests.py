@@ -226,6 +226,8 @@ class RandomnessTester:
         :param function: a reference to the function being checked
         """
         print("\n\t", Colours.Bold + test_name + Colours.End)
+        if "Complexity" in test_name or "Matrix" in test_name:
+            print("\t", "This may take a while please be patient.")
         data_sets = ["pi", "e", "sqrt2", "sqrt3"]
         for i in range(len(data_sets)):
             p_val = function(self.load_test_data(data_sets[i])[:1000000])
@@ -842,7 +844,6 @@ class RandomnessTester:
         """
         This is a test method for the linear complexity test based on the examples in the NIST documentation
         """
-        print("\t", "These tests are slow. Please be patient.")
         expected = [0.255475, 0.826335, 0.317127, 0.346469]
         self.generic_checker("Check Linear Complexity Test", expected, self.linear_complexity)
 
