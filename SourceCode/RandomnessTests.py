@@ -100,7 +100,7 @@ class RandomnessTester:
         # For each data set in self.bin
         for c in self.bin.columns:
             print(Colours.Bold + "\n\tRunning " + self.bin.method + " based tests on", c + Colours.End, "\n")
-            test_names = ["\t01. Monobit Test Results",
+            test_names = ["\t01. Monobit Test",
                           "\t02. Block Frequency Test",
                           "\t03. Independent Runs Test",
                           "\t04. Longest Runs Test",
@@ -108,7 +108,8 @@ class RandomnessTester:
                           "\t06. Spectral Test",
                           "\t07. Non Overlapping Patterns",
                           "\t08. Overlapping Patterns",
-                          "\t09. Universal Test"]
+                          "\t09. Universal Test",
+                          "\t10. Linear Complexity Test"]
 
             for i in range(len(test_names)):
                 length = len(test_names[i])
@@ -117,8 +118,8 @@ class RandomnessTester:
                 filler = filler.replace("0", " ")
                 test_names[i] += filler
 
-            pvals = [[], [], [], [], [], [], [], [], [], []]
-            pval_strings = ["", "", "", "", "", "", "", "", "", ""]
+            pvals = [[], [], [], [], [], [], [], [], [], [], []]
+            pval_strings = ["", "", "", "", "", "", "", "", "", "", ""]
 
             # Get the samples for the data set
             binary_strings = self.bin.bin_data[c]
@@ -161,6 +162,10 @@ class RandomnessTester:
                 p_val = self.universal(str_data)
                 pval_strings[8] += self.get_string(p_val)
                 pvals[8].append(p_val)
+
+                p_val = self.linear_complexity(str_data, block_size=block_size)
+                pval_strings[9] += self.get_string(p_val)
+                pvals[9].append(p_val)
 
             # For each sample calculate the aggregate p_value and aggregate pass %
             aggregate_pvals, aggregate_pass = [], []
@@ -230,15 +235,15 @@ class RandomnessTester:
         """
         This method calls the method calls each one of the checks of the randomness tests contained in this class
         """
-        # self.monobit_check()
-        # self.block_frequency_check()
-        # self.independent_runs_check()
-        # self.longest_runs_check()
-        # self.matrix_rank_check()
-        # self.spectral_check()
-        # self.non_overlapping_patterns_check()
-        # self.overlapping_patterns_check()
-        # self.universal_check()
+        self.monobit_check()
+        self.block_frequency_check()
+        self.independent_runs_check()
+        self.longest_runs_check()
+        self.matrix_rank_check()
+        self.spectral_check()
+        self.non_overlapping_patterns_check()
+        self.overlapping_patterns_check()
+        self.universal_check()
         self.linear_complexity_check()
 
     def zeros_and_ones_count(self, str_data: str):
@@ -752,58 +757,56 @@ class RandomnessTester:
         self.generic_checker("Check Universal Test", expected, self.universal)
 
     def linear_complexity(self, bin_data, block_size=500):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        The focus of this test is the length of a linear feedback shift register (LFSR). The purpose of this test is to
+        determine whether or not the sequence is complex enough to be considered random. Random sequences are
+        characterized by longer LFSRs. An LFSR that is too short implies non-randomness.
+
+        :param bin_data: a binary string
+        :param block_size: the size of the blocks to divide bin_data into. Recommended block_size >= 500
+        :return:
+        """
         dof = 6
-        n = len(bin_data)
         piks = [0.01047, 0.03125, 0.125, 0.5, 0.25, 0.0625, 0.020833]
 
-        parity = (block_size+1) % 2
-        if parity == 0:
-            sign = -1
+        t2 = (block_size / 3.0 + 2.0 / 9) / 2 ** block_size
+        mean = 0.5 * block_size + (1.0 / 36) * (9 + (-1) ** (block_size + 1)) - t2
+
+        num_blocks = int(len(bin_data) / block_size)
+        if num_blocks > 1:
+            block_end = block_size
+            block_start = 0
+            blocks = []
+            for i in range(num_blocks):
+                blocks.append(bin_data[block_start:block_end])
+                block_start += block_size
+                block_end += block_size
+
+            complexities = []
+            for block in blocks:
+                complexities.append(self.berlekamp_massey_algorithm(block))
+
+            t = ([-1.0 * (((-1) ** block_size) * (chunk - mean) + 2.0 / 9) for chunk in complexities])
+            vg = numpy.histogram(t, bins=[-9999999999, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 9999999999])[0][::-1]
+            im = ([((vg[ii] - num_blocks * piks[ii]) ** 2) / (num_blocks * piks[ii]) for ii in range(7)])
+
+            chi_squared = 0.0
+            for i in range(len(piks)):
+                chi_squared += im[i]
+            p_val = spc.gammaincc(dof / 2.0, chi_squared / 2.0)
+            return p_val
         else:
-            sign = 1
+            return -1.0
 
-        mean = block_size/2.0 + (9.0+sign)/36.0 - 1.0/pow(2, block_size) * (block_size/3.0 + 2.0/9.0)
-        num_blocks = math.floor(n / block_size)
+    def berlekamp_massey_algorithm(self, block_data):
+        """
 
-        parity = block_size % 2
-        if parity == 0:
-            sign = 1
-        else:
-            sign = -1
-
-        vobs = numpy.zeros(dof+1)
-        block_start = 0
-        block_end = block_start + block_size
-        for i in range(num_blocks):
-            block_data = bin_data[block_start:block_end]
-            complexity = self.berlekamp_massey_algorithms(block_data)
-            t = sign * (complexity - mean) + 2.0/9.0
-
-            if t <= -2.5:
-                vobs[0] += 1
-            elif -2.5 < t <= -1.5:
-                vobs[1] += 1
-            elif -1.5 < t <= -0.5:
-                vobs[2] += 1
-            elif -0.5 < t <= 0.5:
-                vobs[3] += 1
-            elif 0.5 < t <= 1.5:
-                vobs[4] += 1
-            elif 1.5 < t <= 2.5:
-                vobs[5] += 1
-            else:
-                vobs[6] += 1
-
-            block_start += block_size
-            block_end = block_start + block_size
-
-        chi_squared = 0.0
-        for i in range(len(piks)):
-            chi_squared += pow(vobs[i] - block_size * piks[i], 2.0) / (block_size * piks[i])
-        p_val = spc.gammaincc(dof / 2.0, chi_squared / 2.0)
-        return p_val
-
-    def berlekamp_massey_algorithms(self, block_data):
+        :param block_data:
+        :return:
+        """
         n = len(block_data)
         c = numpy.zeros(n)
         b = numpy.zeros(n)
@@ -812,11 +815,11 @@ class RandomnessTester:
         int_data = [int(el) for el in block_data]
         while i < n:
             v = int_data[(i - l):i]
-            v.reverse()
+            v = v[::-1]
             cc = c[1:l + 1]
             d = (int_data[i] + numpy.dot(v, cc)) % 2
             if d == 1:
-                temp = c
+                temp = copy.copy(c)
                 p = numpy.zeros(n)
                 for j in range(0, l):
                     if b[j] == 1:
@@ -833,6 +836,7 @@ class RandomnessTester:
         """
         This is a test method for the linear complexity test based on the examples in the NIST documentation
         """
+        print("\t", "These tests are slow. Please be patient.")
         expected = [0.255475, 0.826335, 0.317127, 0.346469]
         self.generic_checker("Check Linear Complexity Test", expected, self.linear_complexity)
 

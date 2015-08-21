@@ -7,3 +7,4 @@ YAHOO/INDEX_GDAXI,Open#High#Low#Volume#Adjusted Close,DAX Index (Germany)
 PRAGUESE/PX,% Change,Prague Stock Index: PX
 YAHOO/INDEX_SSEC,Open#High#Low#Volume#Adjusted Close,Shanghai Composite Index (China)
 YAHOO/INDEX_IBEX,Open#High#Low#Volume#Adjusted Close,IBEX 35 Index (Spain)
+CURRFX/USDGBP,High#Low,Currency Exchange Rates - USD vs GBP

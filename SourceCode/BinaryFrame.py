@@ -32,6 +32,7 @@ class BinaryFrame:
             days = len(self.data[data_set])
             # Days per binary stream
             days_in_stream = math.floor(days / self.time_periods)
+            # print("\t", "Converting", data_set, "to BinaryFrame. Days in stream =", days_in_stream)
             # While less binary streams than time periods
             while len(binary_streams) < self.time_periods:
                 # Start a new binary stream
