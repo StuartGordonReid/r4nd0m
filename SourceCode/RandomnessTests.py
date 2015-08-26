@@ -257,6 +257,7 @@ class RandomnessTester:
         self.overlapping_patterns_check()
         self.universal_check()
         self.serial_check()
+        self.approximate_entropy_check()
         # These checks are slow
         self.matrix_rank_check()
         self.linear_complexity_check()
@@ -771,7 +772,7 @@ class RandomnessTester:
         expected = [0.669012, 0.282568, 0.130805, 0.165981]
         self.generic_checker("Check Universal Test", expected, self.universal)
 
-    def linear_complexity(self, bin_data, block_size=500):
+    def linear_complexity(self, bin_data: str, block_size=500):
         """
         Note that this description is taken from the NIST documentation [1]
         [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
@@ -816,8 +817,15 @@ class RandomnessTester:
         else:
             return -1.0
 
-    def berlekamp_massey_algorithm(self, block_data):
+    def berlekamp_massey_algorithm(self, block_data: str):
         """
+        An implementation of the Berlekamp Massey Algorithm. Taken from Wikipedia [1]
+        [1] - https://en.wikipedia.org/wiki/Berlekamp-Massey_algorithm
+
+        The Berlekamp–Massey algorithm is an algorithm that will find the shortest linear feedback shift register (LFSR)
+        for a given binary output sequence. The algorithm will also find the minimal polynomial of a linearly recurrent
+        sequence in an arbitrary field. The field requirement means that the Berlekamp–Massey algorithm requires all
+        non-zero elements to have a multiplicative inverse.
 
         :param block_data:
         :return:
@@ -854,7 +862,7 @@ class RandomnessTester:
         expected = [0.255475, 0.826335, 0.317127, 0.346469]
         self.generic_checker("Check Linear Complexity Test", expected, self.linear_complexity)
 
-    def serial(self, bin_data, pattern_length=16, method="first"):
+    def serial(self, bin_data: str, pattern_length=16, method="first"):
         """
         Note that this description is taken from the NIST documentation [1]
         [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
@@ -865,8 +873,9 @@ class RandomnessTester:
         sequences have uniformity; that is, every m-bit pattern has the same chance of appearing as every other
         m-bit pattern. Note that for m = 1, the Serial test is equivalent to the Frequency test of Section 2.1.
 
-        :param bin_data:
-        :return:
+        :param bin_data: a binary string
+        :param pattern_length: the length of the pattern (m)
+        :return: the P value
         """
         n = len(bin_data)
         # Add first m-1 bits to the end
@@ -877,25 +886,16 @@ class RandomnessTester:
         for i in range(pattern_length + 1):
             max_pattern += '1'
 
-        # Work out the maximum integer representable using a sequence of 1 bits
-        max_int_one = int(max_pattern[0:pattern_length:], 2)
-        max_int_two = int(max_pattern[0:pattern_length-1:], 2)
-        max_int_thr = int(max_pattern[0:pattern_length-2:], 2)
-
         # Keep track of each pattern's frequency (how often it appears)
-        vobs_one = numpy.zeros(max_int_one + 1)
-        vobs_two = numpy.zeros(max_int_two + 1)
-        vobs_thr = numpy.zeros(max_int_thr + 1)
+        vobs_one = numpy.zeros(int(max_pattern[0:pattern_length:], 2) + 1)
+        vobs_two = numpy.zeros(int(max_pattern[0:pattern_length-1:], 2) + 1)
+        vobs_thr = numpy.zeros(int(max_pattern[0:pattern_length-2:], 2) + 1)
 
         for i in range(n):
             # Work out what pattern is observed
-            pos_one = int(bin_data[i:i + pattern_length:], 2)
-            pos_two = int(bin_data[i:i + pattern_length-1:], 2)
-            pos_thr = int(bin_data[i:i + pattern_length-2:], 2)
-            # Increment the counters
-            vobs_one[pos_one] += 1
-            vobs_two[pos_two] += 1
-            vobs_thr[pos_thr] += 1
+            vobs_one[int(bin_data[i:i + pattern_length:], 2)] += 1
+            vobs_two[int(bin_data[i:i + pattern_length-1:], 2)] += 1
+            vobs_thr[int(bin_data[i:i + pattern_length-2:], 2)] += 1
 
         vobs = [vobs_one, vobs_two, vobs_thr]
         sums = numpy.zeros(3)
@@ -924,6 +924,59 @@ class RandomnessTester:
         """
         expected = [0.143005, 0.766182, 0.861925, 0.157500]
         self.generic_checker("Check Serial Test", expected, self.serial)
+
+    def approximate_entropy(self, bin_data: str, pattern_length=10):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        As with the Serial test of Section 2.11, the focus of this test is the frequency of all possible overlapping
+        m-bit patterns across the entire sequence. The purpose of the test is to compare the frequency of overlapping
+        blocks of two consecutive/adjacent lengths (m and m+1) against the expected result for a random sequence.
+
+        :param bin_data: a binary string
+        :param pattern_length: the length of the pattern (m)
+        :return: the P value
+        """
+        n = len(bin_data)
+        # Add first m+1 bits to the end
+        # NOTE: documentation says m-1 bits but that doesnt make sense, or work.
+        bin_data += bin_data[:pattern_length + 1:]
+
+        # Get max length one patterns for m, m-1, m-2
+        max_pattern = ''
+        for i in range(pattern_length + 2):
+            max_pattern += '1'
+
+        # Keep track of each pattern's frequency (how often it appears)
+        vobs_one = numpy.zeros(int(max_pattern[0:pattern_length:], 2) + 1)
+        vobs_two = numpy.zeros(int(max_pattern[0:pattern_length + 1:], 2) + 1)
+
+        for i in range(n):
+            # Work out what pattern is observed
+            vobs_one[int(bin_data[i:i + pattern_length:], 2)] += 1
+            vobs_two[int(bin_data[i:i + pattern_length + 1:], 2)] += 1
+
+        # Calculate the test statistics and p values
+        vobs = [vobs_one, vobs_two]
+        sums = numpy.zeros(2)
+        for i in range(2):
+            for j in range(len(vobs[i])):
+                if vobs[i][j] > 0:
+                    sums[i] += vobs[i][j] * math.log(vobs[i][j] / n)
+        sums /= n
+        ape = sums[0] - sums[1]
+        chi_squared = 2.0 * n * (math.log(2) - ape)
+        p_val = spc.gammaincc(pow(2, pattern_length-1), chi_squared/2.0)
+        return p_val
+
+    def approximate_entropy_check(self):
+        """
+        This is a test method for the serial test based on the examples in the NIST documentation
+        :return:
+        """
+        expected = [0.361595, 0.700073, 0.884740, 0.180481]
+        self.generic_checker("Check Approximate Entropy Test", expected, self.approximate_entropy)
 
 
 class BinaryMatrix:
