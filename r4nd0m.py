@@ -142,7 +142,7 @@ if __name__ == '__main__':
 
     least_random_fit = 15
     least_random_interval = 1
-    for interval in range(1, 15):
+    for interval in range(5, 6):
         path = os.path.join("MetaData", file_name)
         passed = run_experiments(path, 64, 4, m, start_year, end_year, interval)
         passed_avg = numpy.array(passed[2::]).mean()

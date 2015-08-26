@@ -110,7 +110,8 @@ class RandomnessTester:
                           "\t07. Non Overlapping Patterns",
                           "\t08. Overlapping Patterns",
                           "\t09. Universal Test",
-                          "\t10. Linear Complexity Test"]
+                          "\t10. Linear Complexity Test",
+                          "\t11. Serial Test"]
 
             for i in range(len(test_names)):
                 length = len(test_names[i])
@@ -119,8 +120,8 @@ class RandomnessTester:
                 filler = filler.replace("0", " ")
                 test_names[i] += filler
 
-            pvals = [[], [], [], [], [], [], [], [], [], [], []]
-            pval_strings = ["", "", "", "", "", "", "", "", "", "", ""]
+            pvals = [[], [], [], [], [], [], [], [], [], [], [], []]
+            pval_strings = ["", "", "", "", "", "", "", "", "", "", "", ""]
 
             # Get the samples for the data set
             binary_strings = self.bin.bin_data[c]
@@ -167,6 +168,10 @@ class RandomnessTester:
                 p_val = self.linear_complexity(str_data, block_size=block_size)
                 pval_strings[9] += self.get_string(p_val)
                 pvals[9].append(p_val)
+
+                p_val = self.serial(str_data, method="min")
+                pval_strings[10] += self.get_string(p_val)
+                pvals[10].append(p_val)
 
             # For each sample calculate the aggregate p_value and aggregate pass %
             aggregate_pvals, aggregate_pass = [], []
@@ -247,11 +252,13 @@ class RandomnessTester:
         self.block_frequency_check()
         self.independent_runs_check()
         self.longest_runs_check()
-        self.matrix_rank_check()
         self.spectral_check()
         self.non_overlapping_patterns_check()
         self.overlapping_patterns_check()
         self.universal_check()
+        self.serial_check()
+        # These checks are slow
+        self.matrix_rank_check()
         self.linear_complexity_check()
 
     def zeros_and_ones_count(self, str_data: str):
@@ -846,6 +853,77 @@ class RandomnessTester:
         """
         expected = [0.255475, 0.826335, 0.317127, 0.346469]
         self.generic_checker("Check Linear Complexity Test", expected, self.linear_complexity)
+
+    def serial(self, bin_data, pattern_length=16, method="first"):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        The focus of this test is the frequency of all possible overlapping m-bit patterns across the entire
+        sequence. The purpose of this test is to determine whether the number of occurrences of the 2m m-bit
+        overlapping patterns is approximately the same as would be expected for a random sequence. Random
+        sequences have uniformity; that is, every m-bit pattern has the same chance of appearing as every other
+        m-bit pattern. Note that for m = 1, the Serial test is equivalent to the Frequency test of Section 2.1.
+
+        :param bin_data:
+        :return:
+        """
+        n = len(bin_data)
+        # Add first m-1 bits to the end
+        bin_data += bin_data[:pattern_length - 1:]
+
+        # Get max length one patterns for m, m-1, m-2
+        max_pattern = ''
+        for i in range(pattern_length + 1):
+            max_pattern += '1'
+
+        # Work out the maximum integer representable using a sequence of 1 bits
+        max_int_one = int(max_pattern[0:pattern_length:], 2)
+        max_int_two = int(max_pattern[0:pattern_length-1:], 2)
+        max_int_thr = int(max_pattern[0:pattern_length-2:], 2)
+
+        # Keep track of each pattern's frequency (how often it appears)
+        vobs_one = numpy.zeros(max_int_one + 1)
+        vobs_two = numpy.zeros(max_int_two + 1)
+        vobs_thr = numpy.zeros(max_int_thr + 1)
+
+        for i in range(n):
+            # Work out what pattern is observed
+            pos_one = int(bin_data[i:i + pattern_length:], 2)
+            pos_two = int(bin_data[i:i + pattern_length-1:], 2)
+            pos_thr = int(bin_data[i:i + pattern_length-2:], 2)
+            # Increment the counters
+            vobs_one[pos_one] += 1
+            vobs_two[pos_two] += 1
+            vobs_thr[pos_thr] += 1
+
+        vobs = [vobs_one, vobs_two, vobs_thr]
+        sums = numpy.zeros(3)
+        for i in range(3):
+            for j in range(len(vobs[i])):
+                sums[i] += pow(vobs[i][j], 2)
+            sums[i] = (sums[i] * pow(2, pattern_length-i)/n) - n
+
+        # Calculate the test statistics and p values
+        del1 = sums[0] - sums[1]
+        del2 = sums[0] - 2.0 * sums[1] + sums[2]
+        p_val_one = spc.gammaincc(pow(2, pattern_length-1)/2, del1/2.0)
+        p_val_two = spc.gammaincc(pow(2, pattern_length-2)/2, del2/2.0)
+
+        # For checking the outputs
+        if method == "first":
+            return p_val_one
+        else:
+            # I am not sure if this is correct, but it makes sense to me.
+            return min(p_val_one, p_val_two)
+
+    def serial_check(self):
+        """
+        This is a test method for the serial test based on the examples in the NIST documentation
+        :return:
+        """
+        expected = [0.143005, 0.766182, 0.861925, 0.157500]
+        self.generic_checker("Check Serial Test", expected, self.serial)
 
 
 class BinaryMatrix:
