@@ -107,11 +107,12 @@ class RandomnessTester:
                           "\t04. Longest Runs Test",
                           "\t05. Matrix Rank Test",
                           "\t06. Spectral Test",
-                          "\t07. Non Overlapping Patterns",
-                          "\t08. Overlapping Patterns",
+                          "\t07. Non Overlapping Patterns Test",
+                          "\t08. Overlapping Patterns Test",
                           "\t09. Universal Test",
                           "\t10. Linear Complexity Test",
-                          "\t11. Serial Test"]
+                          "\t11. Serial Test",
+                          "\t12. Approximate Entropy Test"]
 
             for i in range(len(test_names)):
                 length = len(test_names[i])
@@ -120,8 +121,8 @@ class RandomnessTester:
                 filler = filler.replace("0", " ")
                 test_names[i] += filler
 
-            pvals = [[], [], [], [], [], [], [], [], [], [], [], []]
-            pval_strings = ["", "", "", "", "", "", "", "", "", "", "", ""]
+            pvals = [[], [], [], [], [], [], [], [], [], [], [], [], []]
+            pval_strings = ["", "", "", "", "", "", "", "", "", "", "", "", ""]
 
             # Get the samples for the data set
             binary_strings = self.bin.bin_data[c]
@@ -172,6 +173,10 @@ class RandomnessTester:
                 p_val = self.serial(str_data, method="min")
                 pval_strings[10] += self.get_string(p_val)
                 pvals[10].append(p_val)
+
+                p_val = self.approximate_entropy(str_data)
+                pval_strings[11] += self.get_string(p_val)
+                pvals[11].append(p_val)
 
             # For each sample calculate the aggregate p_value and aggregate pass %
             aggregate_pvals, aggregate_pass = [], []
