@@ -1,6 +1,5 @@
 import scipy.special as spc
 import scipy.fftpack as sff
-import numpy.linalg as lng
 import scipy.stats as sst
 import numpy
 import math
@@ -16,7 +15,7 @@ class Colours:
 
 
 class RandomnessTester:
-    def __init__(self, bin, method, real_data, start_year, end_year):
+    def __init__(self, bin, real_data, start_year, end_year):
         """
         Initializes a RandomnessTester object. This object contains the NIST cryptographic tests for randomness [1].
         These tests only work on binary strings. The input data (bin) is a BinaryFrame object. A BinaryFrame object is
@@ -33,12 +32,11 @@ class RandomnessTester:
         :param bin: this is a "BinaryFrame" object which is a conversion of a pandas DataFrame into a binary dictionary
         """
         self.bin = bin
-        self.method = method
         self.real_data = real_data
         self.start_year = start_year
         self.end_year = end_year
         self.epsilon = 0.00001
-        self.condition = 0.001
+        self.confidence_level = 0.001
 
     def get_string(self, p_val):
         """
@@ -47,7 +45,7 @@ class RandomnessTester:
         :return: a string for outputting to the console
         """
         if p_val >= 0:
-            if p_val < self.condition:
+            if p_val < self.confidence_level:
                 return Colours.Fail + "{0:.5f}".format(p_val) + "\t" + Colours.End
             else:
                 return Colours.Pass + "{0:.5f}".format(p_val) + "\t" + Colours.End
@@ -78,24 +76,24 @@ class RandomnessTester:
         :return: the proportion of samples which passed their tests.
         """
         npvals = numpy.array(pvals)
-        return (npvals > self.condition).sum() / len(pvals)
+        return (npvals > self.confidence_level).sum() / len(pvals)
 
-    def print_dates(self, blocks):
+    def print_dates(self, num_blocks):
         if self.real_data:
             filler = "".zfill(64)
             string_out = filler.replace("0", " ")
-            step = (self.end_year - self.start_year) / blocks
+            step = (self.end_year - self.start_year) / num_blocks
             dates = numpy.arange(start=self.start_year, stop=self.end_year, step=step)
-            for i in range(blocks):
+            for i in range(num_blocks):
                 start_string = "~" + str(int(dates[i]))
                 string_out += start_string + "\t"
             print(string_out)
 
-    def run_test_suite(self, block_size, q_size):
+    def run_test_suite(self, block_size, matrix_size):
         """
         This method runs all of the tests included in the NIST test suite for randomness
         :param block_size: the length of each block to look at for each bit string
-        :param q_size: the size of the matrix to look at for each bit string
+        :param matrix_size: the size of the matrix to look at for each bit string
         """
         tests_passed = []
         # For each data set in self.bin
@@ -112,7 +110,9 @@ class RandomnessTester:
                           "\t09. Universal Test",
                           "\t10. Linear Complexity Test",
                           "\t11. Serial Test",
-                          "\t12. Approximate Entropy Test"]
+                          "\t12. Approximate Entropy Test",
+                          "\t13 a. Forward Cumulative Sums Test",
+                          "\t13 b. Backward Cumulative Sums Test"]
 
             for i in range(len(test_names)):
                 length = len(test_names[i])
@@ -121,8 +121,8 @@ class RandomnessTester:
                 filler = filler.replace("0", " ")
                 test_names[i] += filler
 
-            pvals = [[], [], [], [], [], [], [], [], [], [], [], [], []]
-            pval_strings = ["", "", "", "", "", "", "", "", "", "", "", "", ""]
+            pvals = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
+            pval_strings = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
 
             # Get the samples for the data set
             binary_strings = self.bin.bin_data[c]
@@ -146,7 +146,7 @@ class RandomnessTester:
                 pval_strings[3] += self.get_string(p_val)
                 pvals[3].append(p_val)
 
-                p_val = self.matrix_rank(str_data, q_size)
+                p_val = self.matrix_rank(str_data, matrix_size)
                 pval_strings[4] += self.get_string(p_val)
                 pvals[4].append(p_val)
 
@@ -178,6 +178,14 @@ class RandomnessTester:
                 pval_strings[11] += self.get_string(p_val)
                 pvals[11].append(p_val)
 
+                p_val = self.cumulative_sums(str_data, method="forward")
+                pval_strings[12] += self.get_string(p_val)
+                pvals[12].append(p_val)
+
+                p_val = self.cumulative_sums(str_data, method="backward")
+                pval_strings[13] += self.get_string(p_val)
+                pvals[13].append(p_val)
+
             # For each sample calculate the aggregate p_value and aggregate pass %
             aggregate_pvals, aggregate_pass = [], []
             for i in range(len(binary_strings)):
@@ -198,7 +206,7 @@ class RandomnessTester:
 
                 pval_string = Colours.Bold + Colours.Fail + "p=" + "{0:.5f}".format(
                     aggregate_pvals[i]) + "\t" + Colours.End
-                if aggregate_pvals[i] > self.condition:
+                if aggregate_pvals[i] > self.confidence_level:
                     pval_string = Colours.Bold + Colours.Pass + "p=" + "{0:.5f}".format(
                         aggregate_pvals[i]) + "\t" + Colours.End
                 if (numpy.array(pvals[i]) == -1.0).sum() > 0:
@@ -209,21 +217,21 @@ class RandomnessTester:
             tests_passed.append(tests_passed_this)
         return tests_passed
 
-    def load_test_data(self, data_set):
+    def load_test_data(self, data_set_name):
         """
         This method is used to load in a test-data binary string. These data sets are included in the TestData directory
-        :param data_set: the name of the test data set to load e.g. e.csv, pi.csv, etc.
+        :param data_set_name: the name of the test data set to load e.g. e.csv, pi.csv, etc.
         :return: a raw binary string of the data
         """
         try:
             raw_data = ""
-            path = os.path.join(os.getcwd(), os.pardir, "TestData", data_set)
+            path = os.path.join(os.getcwd(), os.pardir, "TestData", data_set_name)
             with open(path, 'r+') as data_set_file:
                 for line in data_set_file:
                     raw_data += line.replace("\n", "").replace("\t", "").replace(" ", "")
             return raw_data
         except FileNotFoundError:
-            path = os.path.join(os.getcwd(), os.pardir, "TestData", data_set)
+            path = os.path.join(os.getcwd(), os.pardir, "TestData", data_set_name)
             print("File not found", path, "exiting")
             exit(0)
 
@@ -263,19 +271,20 @@ class RandomnessTester:
         self.universal_check()
         self.serial_check()
         self.approximate_entropy_check()
+        self.cumulative_sums_check()
         # These checks are slow
         self.matrix_rank_check()
         self.linear_complexity_check()
 
-    def zeros_and_ones_count(self, str_data: str):
+    def count_zeros_and_ones(self, bin_data: str):
         """
         This is just a simple method for counting zeros and ones
-        :param str_data: the data from which to count zeros and ones
+        :param bin_data: the data from which to count zeros and ones
         :return: nothing.
         """
         ones, zeros = 0, 0
         # If the char is 0 minus 1, else add 1
-        for char in str_data:
+        for char in bin_data:
             if char == '0':
                 zeros += 1
             else:
@@ -468,7 +477,7 @@ class RandomnessTester:
         expected = [0.024390, 0.718945, 0.012117, 0.446726]
         self.generic_checker("Testing Longest Runs Test", expected, self.longest_runs)
 
-    def matrix_rank(self, bin_data: str, q=32):
+    def matrix_rank(self, bin_data: str, matrix_size=32):
         """
         Note that this description is taken from the NIST documentation [1]
         [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
@@ -480,10 +489,10 @@ class RandomnessTester:
         :param bin_data: a binary string
         :return: the p-value from the test
         """
-        shape = (q, q)
+        shape = (matrix_size, matrix_size)
         n = len(bin_data)
-        block_size = int(q * q)
-        num_m = math.floor(n / (q * q))
+        block_size = int(matrix_size * matrix_size)
+        num_m = math.floor(n / (matrix_size * matrix_size))
         block_start, block_end = 0, block_size
         # print(q, n, num_m, block_size)
 
@@ -496,12 +505,12 @@ class RandomnessTester:
                     if block_data[i] == '1':
                         block[i] = 1.0
                 m = block.reshape(shape)
-                ranker = BinaryMatrix(m, q, q)
+                ranker = BinaryMatrix(m, matrix_size, matrix_size)
                 rank = ranker.compute_rank()
                 # print(rank)
-                if rank == q:
+                if rank == matrix_size:
                     max_ranks[0] += 1
-                elif rank == (q - 1):
+                elif rank == (matrix_size - 1):
                     max_ranks[1] += 1
                 else:
                     max_ranks[2] += 1
@@ -983,6 +992,71 @@ class RandomnessTester:
         expected = [0.361595, 0.700073, 0.884740, 0.180481]
         self.generic_checker("Check Approximate Entropy Test", expected, self.approximate_entropy)
 
+    def cumulative_sums(self, bin_data: str, method="forward"):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        The focus of this test is the maximal excursion (from zero) of the random walk defined by the cumulative sum of
+        adjusted (-1, +1) digits in the sequence. The purpose of the test is to determine whether the cumulative sum of
+        the partial sequences occurring in the tested sequence is too large or too small relative to the expected
+        behavior of that cumulative sum for random sequences. This cumulative sum may be considered as a random walk.
+        For a random sequence, the excursions of the random walk should be near zero. For certain types of non-random
+        sequences, the excursions of this random walk from zero will be large.
+
+        :param bin_data: a binary string
+        :param method: the method used to calculate the statistic
+        :return: the P-value
+        """
+        n = len(bin_data)
+        counts = numpy.zeros(n)
+        # Calculate the statistic using a walk forward
+        if method != "forward":
+            bin_data = bin_data[::-1]
+
+        ix = 0
+        for char in bin_data:
+            sub = 1
+            if char == '0':
+                sub = -1
+            if ix > 0:
+                counts[ix] = counts[ix-1] + sub
+            else:
+                counts[ix] = sub
+            ix += 1
+
+        z = numpy.max(numpy.abs(counts))
+
+        start = int(numpy.floor(0.25 * numpy.floor(-n / z) + 1))
+        end = int(numpy.floor(0.25 * numpy.floor(n / z) - 1))
+        terms_one = []
+        for k in range(start, end + 1):
+            sub = sst.norm.cdf((4 * k - 1) * z / numpy.sqrt(n))
+            terms_one.append(sst.norm.cdf((4 * k + 1) * z / numpy.sqrt(n)) - sub)
+
+        start = int(numpy.floor(0.25 * numpy.floor(-n / z - 3)))
+        end = int(numpy.floor(0.25 * numpy.floor(n / z) - 1))
+        terms_two = []
+        for k in range(start, end + 1):
+            sub = sst.norm.cdf((4 * k + 1) * z / numpy.sqrt(n))
+            terms_two.append(sst.norm.cdf((4 * k + 3) * z / numpy.sqrt(n)) - sub)
+
+        p_val = 1.0 - numpy.sum(numpy.array(terms_one))
+        p_val += numpy.sum(numpy.array(terms_two))
+        return p_val
+
+    def cumulative_sums_check(self):
+        """
+        This is a test method for the serial test based on the examples in the NIST documentation
+        :return:
+        """
+        # Assumes forward method used
+        expected = [0.628308, 0.669887, 0.879009, 0.917121]
+        self.generic_checker("Check Cumulative Sums Test", expected, self.cumulative_sums)
+        # For backward method uncomment these and change default method
+        # expected = [0.663369, 0.724266, 0.957206, 0.689519]
+        # self.generic_checker("Check Cumulative Sums Test", expected, self.cumulative_sums)
+
 
 class BinaryMatrix:
     def __init__(self, matrix, rows, cols):
@@ -993,9 +1067,9 @@ class BinaryMatrix:
         :param cols: the number of columns
         :return: a BinaryMatrix object
         """
-        self.M = rows
-        self.Q = cols
-        self.A = matrix
+        self.num_rows = rows
+        self.num_cols = cols
+        self.matrix = matrix
         self.m = min(rows, cols)
 
     def compute_rank(self, verbose=False):
@@ -1006,11 +1080,11 @@ class BinaryMatrix:
         :return: the rank of the matrix.
         """
         if verbose:
-            print("Original Matrix\n", self.A)
+            print("Original Matrix\n", self.matrix)
 
         i = 0
         while i < self.m - 1:
-            if self.A[i][i] == 1:
+            if self.matrix[i][i] == 1:
                 self.perform_row_operations(i, True)
             else:
                 found = self.find_unit_element_swap(i, True)
@@ -1019,11 +1093,11 @@ class BinaryMatrix:
             i += 1
 
         if verbose:
-            print("Intermediate Matrix\n", self.A)
+            print("Intermediate Matrix\n", self.matrix)
 
         i = self.m - 1
         while i > 0:
-            if self.A[i][i] == 1:
+            if self.matrix[i][i] == 1:
                 self.perform_row_operations(i, False)
             else:
                 if self.find_unit_element_swap(i, False) == 1:
@@ -1031,7 +1105,7 @@ class BinaryMatrix:
             i -= 1
 
         if verbose:
-            print("Final Matrix\n", self.A)
+            print("Final Matrix\n", self.matrix)
 
         return self.determine_rank()
 
@@ -1044,15 +1118,15 @@ class BinaryMatrix:
         """
         if forward_elimination:
             j = i + 1
-            while j < self.M:
-                if self.A[j][i] == 1:
-                    self.A[j, :] = (self.A[j, :] + self.A[i, :]) % 2
+            while j < self.num_rows:
+                if self.matrix[j][i] == 1:
+                    self.matrix[j, :] = (self.matrix[j, :] + self.matrix[i, :]) % 2
                 j += 1
         else:
             j = i - 1
             while j >= 0:
-                if self.A[j][i] == 1:
-                    self.A[j, :] = (self.A[j, :] + self.A[i, :]) % 2
+                if self.matrix[j][i] == 1:
+                    self.matrix[j, :] = (self.matrix[j, :] + self.matrix[i, :]) % 2
                 j -= 1
 
     def find_unit_element_swap(self, i, forward_elimination):
@@ -1065,28 +1139,28 @@ class BinaryMatrix:
         row_op = 0
         if forward_elimination:
             index = i + 1
-            while index < self.M and self.A[index][i] == 0:
+            while index < self.num_rows and self.matrix[index][i] == 0:
                 index += 1
-            if index < self.M:
+            if index < self.num_rows:
                 row_op = self.swap_rows(i, index)
         else:
             index = i - 1
-            while index >= 0 and self.A[index][i] == 0:
+            while index >= 0 and self.matrix[index][i] == 0:
                 index -= 1
             if index >= 0:
                 row_op = self.swap_rows(i, index)
         return row_op
 
-    def swap_rows(self, i, ix):
+    def swap_rows(self, row_one, row_two):
         """
         This method just swaps two rows in a matrix. Had to use the copy package to ensure no memory leakage
-        :param i: the first row we want to swap and
-        :param ix: the row we want to swap it with
+        :param row_one: the first row we want to swap and
+        :param row_two: the row we want to swap it with
         :return: 1
         """
-        temp = copy.copy(self.A[i, :])
-        self.A[i, :] = self.A[ix, :]
-        self.A[ix, :] = temp
+        temp = copy.copy(self.matrix[row_one, :])
+        self.matrix[row_one, :] = self.matrix[row_two, :]
+        self.matrix[row_two, :] = temp
         return 1
 
     def determine_rank(self):
@@ -1096,10 +1170,10 @@ class BinaryMatrix:
         """
         rank = self.m
         i = 0
-        while i < self.M:
+        while i < self.num_rows:
             all_zeros = 1
-            for j in range(self.Q):
-                if self.A[i][j] == 1:
+            for j in range(self.num_cols):
+                if self.matrix[i][j] == 1:
                     all_zeros = 0
             if all_zeros == 1:
                 rank -= 1
@@ -1126,5 +1200,5 @@ def test_binary_matrix():
 
 
 if __name__ == '__main__':
-    rng_tester = RandomnessTester(None, "discretize", False, 00, 00)
+    rng_tester = RandomnessTester(None, False, 00, 00)
     rng_tester.test_randomness_tester()

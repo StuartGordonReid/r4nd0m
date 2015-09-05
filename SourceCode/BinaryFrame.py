@@ -58,58 +58,58 @@ class BinaryFrame:
             # Set the binary data for this data set to the binary streams list
             self.bin_data[data_set] = binary_streams
 
-    def discretize(self, fp):
+    def discretize(self, floating_point):
         """
         This method discretizes the floating point number according to whether it is + or -
-        :param fp: the floating point number to convert
+        :param floating_point: the floating point number to convert
         :return: a binary string
         """
-        if fp > 0.0:
+        if floating_point > 0.0:
             return '1'
-        if fp < 0.0:
+        if floating_point < 0.0:
             return '0'
-        if fp == 0.0:
+        if floating_point == 0.0:
             return '01'
 
-    def convert_basis_point(self, fp, convert=True):
+    def convert_basis_point(self, floating_point, convert=True):
         """
         This method converts a floating point number to an integer (basis points) and then converts it to binary
-        :param fp: floating point number
+        :param floating_point: floating point number
         :param convert: if true, then the number is not already an integer
         :return: a binary string
         """
         if convert:
-            fp = int(fp * 100)
-        bstring = bin(fp)
-        if fp > 0.0:
+            floating_point = int(floating_point * 100)
+        bstring = bin(floating_point)
+        if floating_point > 0.0:
             return '1' + str(bstring[2:])
-        elif fp < 0.0:
+        elif floating_point < 0.0:
             return '0' + self.flip_bits(str(bstring[3:]))
         else:
             return '01'
 
-    def convert_floating_point(self, fp, length=64):
+    def convert_floating_point(self, floating_point, length=64):
         """
         This method converts a floating point number into a binary string using the IEEE 754 method
-        :param fp: floating point number
+        :param floating_point: floating point number
         :param length: the length of the resulting bit string
         :return: a binary string
         """
-        bin_r = bitstring.BitArray(float=fp, length=length)
+        bin_r = bitstring.BitArray(float=floating_point, length=length)
         bits = str(bin_r._getbin())[1:]
-        if fp > 0.0:
+        if floating_point > 0.0:
             return '1' + bits
-        elif fp < 0.0:
+        elif floating_point < 0.0:
             return '0' + self.flip_bits(bits)
         else:
             return '01'
 
-    def flip_bits(self, bit):
+    def flip_bits(self, bin_data):
         """
         This method flips the bits in a binary string
-        :param bit: the binary string
+        :param bin_data: the binary string
         :return:
         """
-        bit = bit.replace('1', '2')
-        bit = bit.replace('0', '1')
-        return bit.replace('2', '0')
+        bin_data = bin_data.replace('1', '2')
+        bin_data = bin_data.replace('0', '1')
+        return bin_data.replace('2', '0')

@@ -91,7 +91,7 @@ def run_experiments(data_sets, block_sizes, q_sizes, method, start, end, years_p
     prng_binary_frame = BinaryFrame(prng_data, start, end, years_per_block)
     prng_binary_frame.convert(method, convert=False)
     # method, real_data, start_year, end_year, block_size
-    rng_tester = RandomnessTester(prng_binary_frame, method, False, 00, 00)
+    rng_tester = RandomnessTester(prng_binary_frame, False, 00, 00)
     passed = rng_tester.run_test_suite(block_sizes, q_sizes)
     for x in passed:
         all_passed.append(x)
@@ -104,14 +104,14 @@ def run_experiments(data_sets, block_sizes, q_sizes, method, start, end, years_p
     nrand_data.columns = ["Deterministic"]
     nrand_binary_frame = BinaryFrame(nrand_data, start, end, years_per_block)
     nrand_binary_frame.convert(method, convert=True)
-    rng_tester = RandomnessTester(nrand_binary_frame, method, False, 00, 00)
+    rng_tester = RandomnessTester(nrand_binary_frame, False, 00, 00)
     passed = rng_tester.run_test_suite(block_sizes, q_sizes)
     for x in passed:
         all_passed.append(x)
 
     t = setup_environment()
     my_binary_frame = construct_binary_frame(data_sets, method, t, start, end, years_per_block)
-    rng_tester = RandomnessTester(my_binary_frame, method, True, start, end)
+    rng_tester = RandomnessTester(my_binary_frame, True, start, end)
     # my_binary_frame = construct_long_binary_frame(method, stream_length)
     passed = rng_tester.run_test_suite(block_sizes, q_sizes)
     for x in passed:
