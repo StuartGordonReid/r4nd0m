@@ -36,7 +36,7 @@ class RandomnessTester:
         self.start_year = start_year
         self.end_year = end_year
         self.epsilon = 0.00001
-        self.confidence_level = 0.001
+        self.confidence_level = 0.005
 
     def get_string(self, p_val):
         """
@@ -80,7 +80,7 @@ class RandomnessTester:
 
     def print_dates(self, num_blocks):
         if self.real_data:
-            filler = "".zfill(64)
+            filler = "".zfill(68)
             string_out = filler.replace("0", " ")
             step = (self.end_year - self.start_year) / num_blocks
             dates = numpy.arange(start=self.start_year, stop=self.end_year, step=step)
@@ -109,20 +109,48 @@ class RandomnessTester:
                           "\t08. Overlapping Patterns Test",
                           "\t09. Universal Test",
                           "\t10. Linear Complexity Test",
-                          "\t11. Serial Test",
+                          "\t11. Serial Test (p01)",
+                          "\t11. Serial Test (p02)",
                           "\t12. Approximate Entropy Test",
-                          "\t13 a. Forward Cumulative Sums Test",
-                          "\t13 b. Backward Cumulative Sums Test"]
+                          "\t13. Cumulative Sums Test (Forward)",
+                          "\t13. Cumulative Sums Test (Backward)",
+                          "\t14. Random Excursions Test (p01)",
+                          "\t14. Random Excursions Test (p02)",
+                          "\t14. Random Excursions Test (p03)",
+                          "\t14. Random Excursions Test (p04)",
+                          "\t14. Random Excursions Test (p05)",
+                          "\t14. Random Excursions Test (906)",
+                          "\t14. Random Excursions Test (p07)",
+                          "\t14. Random Excursions Test (p08)",
+                          "\t15. Random Excursions Variant Test (p01)",
+                          "\t15. Random Excursions Variant Test (p02)",
+                          "\t15. Random Excursions Variant Test (p03)",
+                          "\t15. Random Excursions Variant Test (p04)",
+                          "\t15. Random Excursions Variant Test (p05)",
+                          "\t15. Random Excursions Variant Test (p06)",
+                          "\t15. Random Excursions Variant Test (p07)",
+                          "\t15. Random Excursions Variant Test (p08)",
+                          "\t15. Random Excursions Variant Test (p09)",
+                          "\t15. Random Excursions Variant Test (p10)",
+                          "\t15. Random Excursions Variant Test (p11)",
+                          "\t15. Random Excursions Variant Test (p12)",
+                          "\t15. Random Excursions Variant Test (p13)",
+                          "\t15. Random Excursions Variant Test (p14)",
+                          "\t15. Random Excursions Variant Test (p15)",
+                          "\t15. Random Excursions Variant Test (p16)",
+                          "\t15. Random Excursions Variant Test (p17)",
+                          "\t15. Random Excursions Variant Test (p18)"]
 
+            pvals = []
+            pval_strings = []
             for i in range(len(test_names)):
                 length = len(test_names[i])
-                space = 40 - length
+                space = 45 - length
                 filler = "".zfill(space)
                 filler = filler.replace("0", " ")
                 test_names[i] += filler
-
-            pvals = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
-            pval_strings = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+                pvals.append([])
+                pval_strings.append("")
 
             # Get the samples for the data set
             binary_strings = self.bin.bin_data[c]
@@ -170,21 +198,35 @@ class RandomnessTester:
                 pval_strings[9] += self.get_string(p_val)
                 pvals[9].append(p_val)
 
-                p_val = self.serial(str_data, method="min")
-                pval_strings[10] += self.get_string(p_val)
-                pvals[10].append(p_val)
+                p_val_one, p_val_two = self.serial(str_data, method="both")
+                # The serial test can return two p-values add one
+                pval_strings[10] += self.get_string(p_val_one)
+                pvals[10].append(p_val_one)
+                # The serial test can return two p-values add two
+                pval_strings[11] += self.get_string(p_val_two)
+                pvals[11].append(p_val_two)
 
                 p_val = self.approximate_entropy(str_data)
-                pval_strings[11] += self.get_string(p_val)
-                pvals[11].append(p_val)
-
-                p_val = self.cumulative_sums(str_data, method="forward")
                 pval_strings[12] += self.get_string(p_val)
                 pvals[12].append(p_val)
 
-                p_val = self.cumulative_sums(str_data, method="backward")
+                p_val = self.cumulative_sums(str_data, method="forward")
                 pval_strings[13] += self.get_string(p_val)
                 pvals[13].append(p_val)
+
+                p_val = self.cumulative_sums(str_data, method="backward")
+                pval_strings[14] += self.get_string(p_val)
+                pvals[14].append(p_val)
+
+                p_values = self.random_excursions(str_data)
+                for j in range(15, 15 + 8):
+                    pvals[j].append(p_values[j - 15])
+                    pval_strings[j] += self.get_string(p_values[j - 15])
+
+                p_values = self.random_excursions_variant(str_data)
+                for j in range(23, 23 + 18):
+                    pvals[j].append(p_values[j - 23])
+                    pval_strings[j] += self.get_string(p_values[j - 23])
 
             # For each sample calculate the aggregate p_value and aggregate pass %
             aggregate_pvals, aggregate_pass = [], []
@@ -198,7 +240,8 @@ class RandomnessTester:
             self.print_dates(len(binary_strings))
             for i in range(len(test_names)):
                 pass_string = Colours.Bold + Colours.Fail + "FAIL!\t" + Colours.End
-                if aggregate_pass[i] >= 0.96:
+                # NIST documentation recommends 0.96 ... but also more samples
+                if aggregate_pass[i] >= 0.90:
                     pass_string = Colours.Bold + Colours.Pass + "PASS!\t" + Colours.End
                     tests_passed_this += 1
                 if (numpy.array(pvals[i]) == -1.0).sum() > 0:
@@ -235,7 +278,7 @@ class RandomnessTester:
             print("File not found", path, "exiting")
             exit(0)
 
-    def generic_checker(self, test_name, expected, function):
+    def generic_checker(self, test_name, expected, function, actual_out=None):
         """
         This is a generic method for checking the outputs from one of the tests against known outputs to ensure that the
         test if acting as expected. Essentially it is a unit tester.
@@ -243,19 +286,33 @@ class RandomnessTester:
         :param expected: a list of expected p-values
         :param function: a reference to the function being checked
         """
+        # Compute the output using the function
         print("\n\t", Colours.Bold + test_name + Colours.End)
         if "Complexity" in test_name or "Matrix" in test_name:
             print("\t", "This may take a while please be patient.")
         data_sets = ["pi", "e", "sqrt2", "sqrt3"]
-        for i in range(len(data_sets)):
-            p_val = function(self.load_test_data(data_sets[i])[:1000000])
-            data_set_label = "".zfill(10 - len(data_sets[i])).replace("0", " ")
-            if abs(p_val - expected[i]) < self.epsilon:
-                print("\t", Colours.Pass + data_sets[i], data_set_label, "\tp expected = ", expected[i],
-                      "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
-            else:
-                print("\t", Colours.Fail + data_sets[i], data_set_label, "\tp expected = ", expected[i],
-                      "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
+        if actual_out is None:
+            for i in range(len(data_sets)):
+                p_val = function(self.load_test_data(data_sets[i])[:1000000])
+                data_set_label = "".zfill(10 - len(data_sets[i])).replace("0", " ")
+                if abs(p_val - expected[i]) < self.epsilon:
+                    print("\t", Colours.Pass + data_sets[i], data_set_label, "\tp expected = ", expected[i],
+                          "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
+                else:
+                    print("\t", Colours.Fail + data_sets[i], data_set_label, "\tp expected = ", expected[i],
+                          "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
+        # Output has already been supplied
+        else:
+            i = 0
+            for p_val in actual_out:
+                data_set_label = "".zfill(10 - len(data_sets[i])).replace("0", " ")
+                if abs(p_val - expected[i]) < self.epsilon:
+                    print("\t", Colours.Pass + data_sets[i], data_set_label, "\tp expected = ", expected[i],
+                          "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
+                else:
+                    print("\t", Colours.Fail + data_sets[i], data_set_label, "\tp expected = ", expected[i],
+                          "\tp computed =", "{0:.6f}".format(p_val) + Colours.End)
+                i += 1
 
     def test_randomness_tester(self):
         """
@@ -272,6 +329,8 @@ class RandomnessTester:
         self.serial_check()
         self.approximate_entropy_check()
         self.cumulative_sums_check()
+        self.random_excursions_check()
+        self.random_excursions_variant_check()
         # These checks are slow
         self.matrix_rank_check()
         self.linear_complexity_check()
@@ -902,31 +961,33 @@ class RandomnessTester:
 
         # Keep track of each pattern's frequency (how often it appears)
         vobs_one = numpy.zeros(int(max_pattern[0:pattern_length:], 2) + 1)
-        vobs_two = numpy.zeros(int(max_pattern[0:pattern_length-1:], 2) + 1)
-        vobs_thr = numpy.zeros(int(max_pattern[0:pattern_length-2:], 2) + 1)
+        vobs_two = numpy.zeros(int(max_pattern[0:pattern_length - 1:], 2) + 1)
+        vobs_thr = numpy.zeros(int(max_pattern[0:pattern_length - 2:], 2) + 1)
 
         for i in range(n):
             # Work out what pattern is observed
             vobs_one[int(bin_data[i:i + pattern_length:], 2)] += 1
-            vobs_two[int(bin_data[i:i + pattern_length-1:], 2)] += 1
-            vobs_thr[int(bin_data[i:i + pattern_length-2:], 2)] += 1
+            vobs_two[int(bin_data[i:i + pattern_length - 1:], 2)] += 1
+            vobs_thr[int(bin_data[i:i + pattern_length - 2:], 2)] += 1
 
         vobs = [vobs_one, vobs_two, vobs_thr]
         sums = numpy.zeros(3)
         for i in range(3):
             for j in range(len(vobs[i])):
                 sums[i] += pow(vobs[i][j], 2)
-            sums[i] = (sums[i] * pow(2, pattern_length-i)/n) - n
+            sums[i] = (sums[i] * pow(2, pattern_length - i) / n) - n
 
         # Calculate the test statistics and p values
         del1 = sums[0] - sums[1]
         del2 = sums[0] - 2.0 * sums[1] + sums[2]
-        p_val_one = spc.gammaincc(pow(2, pattern_length-1)/2, del1/2.0)
-        p_val_two = spc.gammaincc(pow(2, pattern_length-2)/2, del2/2.0)
+        p_val_one = spc.gammaincc(pow(2, pattern_length - 1) / 2, del1 / 2.0)
+        p_val_two = spc.gammaincc(pow(2, pattern_length - 2) / 2, del2 / 2.0)
 
         # For checking the outputs
         if method == "first":
             return p_val_one
+        elif method == "both":
+            return p_val_one, p_val_two
         else:
             # I am not sure if this is correct, but it makes sense to me.
             return min(p_val_one, p_val_two)
@@ -981,7 +1042,7 @@ class RandomnessTester:
         sums /= n
         ape = sums[0] - sums[1]
         chi_squared = 2.0 * n * (math.log(2) - ape)
-        p_val = spc.gammaincc(pow(2, pattern_length-1), chi_squared/2.0)
+        p_val = spc.gammaincc(pow(2, pattern_length - 1), chi_squared / 2.0)
         return p_val
 
     def approximate_entropy_check(self):
@@ -1020,26 +1081,27 @@ class RandomnessTester:
             if char == '0':
                 sub = -1
             if ix > 0:
-                counts[ix] = counts[ix-1] + sub
+                counts[ix] = counts[ix - 1] + sub
             else:
                 counts[ix] = sub
             ix += 1
 
-        z = numpy.max(numpy.abs(counts))
+        # This is the maximum absolute level obtained by the sequence
+        abs_max = numpy.max(numpy.abs(counts))
 
-        start = int(numpy.floor(0.25 * numpy.floor(-n / z) + 1))
-        end = int(numpy.floor(0.25 * numpy.floor(n / z) - 1))
+        start = int(numpy.floor(0.25 * numpy.floor(-n / abs_max) + 1))
+        end = int(numpy.floor(0.25 * numpy.floor(n / abs_max) - 1))
         terms_one = []
         for k in range(start, end + 1):
-            sub = sst.norm.cdf((4 * k - 1) * z / numpy.sqrt(n))
-            terms_one.append(sst.norm.cdf((4 * k + 1) * z / numpy.sqrt(n)) - sub)
+            sub = sst.norm.cdf((4 * k - 1) * abs_max / numpy.sqrt(n))
+            terms_one.append(sst.norm.cdf((4 * k + 1) * abs_max / numpy.sqrt(n)) - sub)
 
-        start = int(numpy.floor(0.25 * numpy.floor(-n / z - 3)))
-        end = int(numpy.floor(0.25 * numpy.floor(n / z) - 1))
+        start = int(numpy.floor(0.25 * numpy.floor(-n / abs_max - 3)))
+        end = int(numpy.floor(0.25 * numpy.floor(n / abs_max) - 1))
         terms_two = []
         for k in range(start, end + 1):
-            sub = sst.norm.cdf((4 * k + 1) * z / numpy.sqrt(n))
-            terms_two.append(sst.norm.cdf((4 * k + 3) * z / numpy.sqrt(n)) - sub)
+            sub = sst.norm.cdf((4 * k + 1) * abs_max / numpy.sqrt(n))
+            terms_two.append(sst.norm.cdf((4 * k + 3) * abs_max / numpy.sqrt(n)) - sub)
 
         p_val = 1.0 - numpy.sum(numpy.array(terms_one))
         p_val += numpy.sum(numpy.array(terms_two))
@@ -1056,6 +1118,146 @@ class RandomnessTester:
         # For backward method uncomment these and change default method
         # expected = [0.663369, 0.724266, 0.957206, 0.689519]
         # self.generic_checker("Check Cumulative Sums Test", expected, self.cumulative_sums)
+
+    def random_excursions(self, bin_data):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        The focus of this test is the number of cycles having exactly K visits in a cumulative sum random walk. The
+        cumulative sum random walk is derived from partial sums after the (0,1) sequence is transferred to the
+        appropriate (-1, +1) sequence. A cycle of a random walk consists of a sequence of steps of unit length taken at
+        random that begin at and return to the origin. The purpose of this test is to determine if the number of visits
+        to a particular state within a cycle deviates from what one would expect for a random sequence. This test is
+        actually a series of eight tests (and conclusions), one test and conclusion for each of the states:
+
+        States -> -4, -3, -2, -1 and +1, +2, +3, +4.
+
+        :param bin_data: a binary string
+        :return: the P-value
+        """
+        # Turn all the binary digits into +1 or -1
+        int_data = numpy.zeros(len(bin_data))
+        for i in range(len(bin_data)):
+            if bin_data[i] == '0':
+                int_data[i] = -1.0
+            else:
+                int_data[i] = 1.0
+
+        # Calculate the cumulative sum
+        cumulative_sum = numpy.cumsum(int_data)
+        # Append a 0 to the end and beginning of the sum
+        cumulative_sum = numpy.append(cumulative_sum, [0])
+        cumulative_sum = numpy.append([0], cumulative_sum)
+
+        # These are the states we are going to look at
+        x_values = numpy.array([-4, -3, -2, -1, 1, 2, 3, 4])
+
+        # Identify all the locations where the cumulative sum revisits 0
+        position = numpy.where(cumulative_sum == 0)[0]
+        # For this identify all the cycles
+        cycles = []
+        for pos in range(len(position) - 1):
+            # Add this cycle to the list of cycles
+            cycles.append(cumulative_sum[position[pos]:position[pos + 1] + 1])
+        num_cycles = len(cycles)
+
+        state_count = []
+        for cycle in cycles:
+            # Determine the number of times each cycle visits each state
+            state_count.append(([len(numpy.where(cycle == state)[0]) for state in x_values]))
+        state_count = numpy.transpose(numpy.clip(state_count, 0, 5))
+
+        su = []
+        for cycle in range(6):
+            su.append([(sct == cycle).sum() for sct in state_count])
+        su = numpy.transpose(su)
+
+        piks = ([([self.get_pik_value(uu, state) for uu in range(6)]) for state in x_values])
+        inner_term = num_cycles * numpy.array(piks)
+        chi = numpy.sum(1.0 * (numpy.array(su) - inner_term) ** 2 / inner_term, axis=1)
+        p_values = ([spc.gammaincc(2.5, cs / 2.0) for cs in chi])
+        return p_values
+
+    def get_pik_value(self, k, x):
+        """
+        This method is used by the random_excursions method to get expected probabilities
+        """
+        if k == 0:
+            out = 1 - 1.0 / (2 * numpy.abs(x))
+        elif k >= 5:
+            out = (1.0 / (2 * numpy.abs(x))) * (1 - 1.0 / (2 * numpy.abs(x))) ** 4
+        else:
+            out = (1.0 / (4 * x * x)) * (1 - 1.0 / (2 * numpy.abs(x))) ** (k - 1)
+        return out
+
+    def random_excursions_check(self):
+        """
+        This method is used to check the random_excursions method is working as expected
+        :return: None
+        """
+        expected = [0.844143, 0.786868, 0.216235, 0.783283]
+        p_values = []
+        data_sets = ["pi", "e", "sqrt2", "sqrt3"]
+        for ds in data_sets:
+            data = self.load_test_data(ds)[:1000000]
+            p_values.append(self.random_excursions(data)[4])
+        self.generic_checker("Random Excursions Test", expected, self.random_excursions, p_values)
+
+    def random_excursions_variant(self, bin_data):
+        """
+        Note that this description is taken from the NIST documentation [1]
+        [1] http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf
+
+        The focus of this test is the total number of times that a particular state is visited (i.e., occurs) in a
+        cumulative sum random walk. The purpose of this test is to detect deviations from the expected number of visits
+        to various states in the random walk. This test is actually a series of eighteen tests (and conclusions), one
+        test and conclusion for each of the states: -9, -8, …, -1 and +1, +2, …, +9.
+
+        :param bin_data: a binary string
+        :return: the P-value
+        """
+        int_data = numpy.zeros(len(bin_data))
+        for i in range(len(bin_data)):
+            int_data[i] = int(bin_data[i])
+        sum_int = (2 * int_data) - numpy.ones(len(int_data))
+        cumulative_sum = numpy.cumsum(sum_int)
+
+        li_data = []
+        for xs in sorted(set(cumulative_sum)):
+            if numpy.abs(xs) <= 9:
+                li_data.append([xs, len(numpy.where(cumulative_sum == xs)[0])])
+
+        j = self.get_frequency(li_data, 0) + 1
+        p_values = []
+        for xs in range(-9, 9 + 1):
+            if not xs == 0:
+                den = numpy.sqrt(2 * j * (4 * numpy.abs(xs) - 2))
+                p_values.append(spc.erfc(numpy.abs(self.get_frequency(li_data, xs) - j) / den))
+        return p_values
+
+    def get_frequency(self, list_data, trigger):
+        """
+        This method is used by the random_excursions_variant method to get frequencies
+        """
+        frequency = 0
+        for (x, y) in list_data:
+            if x == trigger:
+                frequency = y
+        return frequency
+
+    def random_excursions_variant_check(self):
+        """
+        This method is used to check the random_excursions_variant method is working as expected
+        :return: None
+        """
+        expected = [0.760966, 0.826009, 0.566118, 0.155066]
+        p_values = []
+        data_sets = ["pi", "e", "sqrt2", "sqrt3"]
+        for ds in data_sets:
+            data = self.load_test_data(ds)[:1000000]
+            p_values.append(self.random_excursions_variant(data)[8])
+        self.generic_checker("Random Excursions Variant Test", expected, self.random_excursions, p_values)
 
 
 class BinaryMatrix:
@@ -1200,5 +1402,9 @@ def test_binary_matrix():
 
 
 if __name__ == '__main__':
+    """
+    Run this method if you want to check that the code is running as expected and is producing the correct P-value for
+    each test as per the NIST documentation. It checks each test on the first million bits of pi, e, sqrt 2, and sqrt 3
+    """
     rng_tester = RandomnessTester(None, False, 00, 00)
     rng_tester.test_randomness_tester()
