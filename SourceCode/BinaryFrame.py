@@ -10,11 +10,15 @@ class BinaryFrame:
         """
         self.data = data
         self.bin_data = {}
-        self.time_periods = math.floor((end - start) / years_per_block)
+        self.time = end - start
+        self.years_per_block = years_per_block
+        self.time_periods = math.floor(self.time / years_per_block)
+        self.time_periods_fwd = math.floor(self.time - years_per_block + 1)
+        # print(self.time_periods, self.time_periods_fwd)
         self.columns = self.data.columns
         self.method = "discretize"
 
-    def convert(self, method, convert=True):
+    def convert(self, method, convert=True, independent_samples=True):
         """
         A method for discretizing a pandas DataFrame into a Dictionary of Binary Strings
         1) If the return is +, then set the equivalent bit to 1
@@ -27,32 +31,36 @@ class BinaryFrame:
             # List of binary streams
             binary_streams = []
             # Days stepped through
-            day_counter = 0
-            # Total number of days i.e. returns
+            day = 0
             days = len(self.data[data_set])
-            # Days per binary stream
             days_in_stream = math.floor(days / self.time_periods)
-            # print("\t", "Converting", data_set, "to BinaryFrame. Days in stream =", days_in_stream)
+            days_in_year = math.floor(days / self.time)
             # While less binary streams than time periods
-            while len(binary_streams) < self.time_periods:
+            samples = self.time_periods
+            if not independent_samples:
+                samples = self.time_periods_fwd
+            while len(binary_streams) < samples:
                 # Start a new binary stream
                 binary_stream = ""
                 # Convert each day into binary
-                for j in range(days_in_stream):
+                for j in range(day, (day + days_in_stream)):
                     bit = ""
                     if method == "discretize":
-                        bit = self.discretize(self.data[data_set][day_counter])
+                        bit = self.discretize(self.data[data_set][j])
                     elif method == "convert basis point":
-                        bit = self.convert_basis_point(self.data[data_set][day_counter], convert)
+                        bit = self.convert_basis_point(self.data[data_set][j], convert)
                     elif method == "convert floating point":
-                        bit = self.convert_floating_point(self.data[data_set][day_counter])
+                        bit = self.convert_floating_point(self.data[data_set][j])
                     else:
                         print("Unknown conversion method ... exiting application")
                         exit(0)
-                    # Keep tack of days
-                    day_counter += 1
                     # Add day to binary stream
                     binary_stream += bit
+                    # Keep tack of days
+                    if independent_samples:
+                        day += 1
+                if not independent_samples:
+                    day += days_in_year
                 # Append binary stream to binary streams list
                 binary_streams.append(binary_stream)
             # Set the binary data for this data set to the binary streams list

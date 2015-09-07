@@ -82,7 +82,7 @@ class RandomnessTester:
         if self.real_data:
             filler = "".zfill(68)
             string_out = filler.replace("0", " ")
-            step = (self.end_year - self.start_year) / num_blocks
+            step = math.floor((self.end_year - self.start_year) / num_blocks)
             dates = numpy.arange(start=self.start_year, stop=self.end_year, step=step)
             for i in range(num_blocks):
                 start_string = "~" + str(int(dates[i]))
