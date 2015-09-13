@@ -48,4 +48,12 @@ Muliple binary conversion methodologies are supported by the BinaryFrame class, 
 ### Example Usage for each Test
 -------------------------------
 
+The below "tutorial" shows how to very simply just apply each test in the suite to a binary strings. This tutorial does not deal with any of the automated methods for running the full suite of tests on a BinaryFrame object because most people would most probably not need to use all of the tests and would probably prefer some freedom regarding how they interface with the NIST randomness tests.
+
 ## Step 1 - Create a Randomness Tester Object
+
+```python
+rng_tester = RandomnessTester(None, False, 00, 00)
+```
+
+

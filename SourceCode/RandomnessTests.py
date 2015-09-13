@@ -15,7 +15,7 @@ class Colours:
 
 
 class RandomnessTester:
-    def __init__(self, bin, real_data, start_year, end_year):
+    def __init__(self, bin, real_data=False, start_year=00, end_year=00):
         """
         Initializes a RandomnessTester object. This object contains the NIST cryptographic tests for randomness [1].
         These tests only work on binary strings. The input data (bin) is a BinaryFrame object. A BinaryFrame object is
@@ -1406,5 +1406,5 @@ if __name__ == '__main__':
     Run this method if you want to check that the code is running as expected and is producing the correct P-value for
     each test as per the NIST documentation. It checks each test on the first million bits of pi, e, sqrt 2, and sqrt 3
     """
-    rng_tester = RandomnessTester(None, False, 00, 00)
+    rng_tester = RandomnessTester(None)
     rng_tester.test_randomness_tester()
