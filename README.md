@@ -3,6 +3,11 @@
 
 r4nd0m is a project created by Stuart Reid to test the validity of the random walk hypothesis by subjecting discretized market returns to the NIST suite of cryptographic tests for randomness. This project contains standalone (static) implementations of each of the NIST tests as well as various methods and classes for downloading market data, and converting that data to a binary representation.
 
+### Disclaimer
+--------------
+
+r4nd0m implements the NIST suite of Cryptographic tests in Python and carries the same disclaimer as the original [C implementation](http://csrc.nist.gov/groups/ST/toolkit/rng/documentation_software.html). Software disclaimer: "This software was developed at the National Institute of Standards and Technology by employees of the Federal Government in the course of their official duties. Pursuant to title 17 Section 105 of the United States Code this software is not subject to copyright protection and is in the public domain. The NIST Statistical Test Suite is an experimental system. NIST assumes no responsibility whatsoever for its use by other parties, and makes no guarantees, expressed or implied, about its quality, reliability, or any other characteristic. We would appreciate acknowledgment if the software is used."
+
 ### Dependencies
 ----------------
 
@@ -187,5 +192,115 @@ example_binary_string = "01010101010101010101010101010101"
 p_value = rng_tester.block_frequency(example_binary_string, block_size=64)
 ```
 
-The block_size parameter tells the method how big each block (substring) of the binary string should be.
+The block_size parameter tells the method how big each substring (block) of the data should be.
+
+#### Apply the Independent Runs test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this tests if the total number of runs in the sequences, where a run is an uninterrupted sequence
+of identical bits. A run of length k consists of k identical bits and is bounded before and after with a bit of
+the opposite value. The purpose of the runs tests is to determine whether the number of runs of ones and zeros
+of various lengths is as expected for a random sequence. In particular, this tests determines whether the
+oscillation between zeros and ones is either too fast or too slow.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.independent_runs(example_binary_string)
+
+#### Apply the Longest Run of Ones test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of the tests is the longest run of ones within M-bit blocks. The purpose of this tests is to determine
+whether the length of the longest run of ones within the tested sequences is consistent with the length of the
+longest run of ones that would be expected in a random sequence. Note that an irregularity in the expected
+length of the longest run of ones implies that there is also an irregularity ub tge expected length of the long
+est run of zeroes. Therefore, only one test is necessary for this statistical tests of randomness
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.longest_runs(example_binary_string)
+```
+
+#### Apply the Matrix Rank Transformation test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of the test is the rank of disjoint sub-matrices of the entire sequence. The purpose of this test is
+to check for linear dependence among fixed length sub strings of the original sequence. Note that this test
+also appears in the DIEHARD battery of tests.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.matrix_rank(example_binary_string, matrix_size=16)
+
+The matrix_size parameter tells the method how big each matrix which is constructed from the data should be. A number 4 would result in 4x4 matrices and a number 16 would result in 16x16 matrices etc. Note that this test **depends** on the BinaryMatrix class contained inside the RandomnessTester.py file.
+```
+
+#### Apply the Spectral (Discrete Fourier Transform) test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the peak heights in the Discrete Fourier Transform of the sequence. The purpose of
+this test is to detect periodic features (i.e., repetitive patterns that are near each other) in the tested
+sequence that would indicate a deviation from the assumption of randomness. The intention is to detect whether
+the number of peaks exceeding the 95 % threshold is significantly different than 5 %.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.spectral(example_binary_string)
+```
+
+#### Apply the Non Overlapping Patterns test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the number of occurrences of pre-specified target strings. The purpose of this
+test is to detect generators that produce too many occurrences of a given non-periodic (aperiodic) pattern.
+For this test and for the Overlapping Template Matching test of Section 2.8, an m-bit window is used to
+search for a specific m-bit pattern. If the pattern is not found, the window slides one bit position. If the
+pattern is found, the window is reset to the bit after the found pattern, and the search resumes.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.non_overlapping_patterns(example_binary_string, pattern="000000001", num_blocks=8)
+```
+
+The pattern parameter tells the method what binary pattern it should match on, and the num_block parameter tells the method how many blocks it should create from the data. These blocks do not overlap with one another which is why this is called the non overlapping patterns test.
+
+#### Apply the Overlapping Patterns test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of the Overlapping Template Matching test is the number of occurrences of pre-specified target
+strings. Both this test and the Non-overlapping Template Matching test of Section 2.7 use an m-bit
+window to search for a specific m-bit pattern. As with the test in Section 2.7, if the pattern is not found,
+the window slides one bit position. The difference between this test and the test in Section 2.7 is that
+when the pattern is found, the window slides only one bit before resuming the search.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.non_overlapping_patterns(example_binary_string, pattern_size=9, block_size=1032)
+```
+
+The pattern parameter tells the method what binary pattern it should match on, and the block_size parameter tells the method how many big each blog created from the data should be. These blocks do overlap with one another which is why this is called the overlapping patterns test.
+
+#### Apply the Universal test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the number of bits between matching patterns (a measure that is related to the
+length of a compressed sequence). The purpose of the test is to detect whether or not the sequence can be
+significantly compressed without loss of information. A significantly compressible sequence is considered
+to be non-random. **This test is always skipped because the requirements on the lengths of the binary
+strings are too high i.e. there have not been enough trading days to meet the requirements.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.universal(example_binary_string)
+```
+
+NOTE: the universal test requires quite a lot of data to produce a statistically significant result.
+
 
