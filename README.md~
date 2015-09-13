@@ -238,4 +238,69 @@ p_value = rng_tester.matrix_rank(example_binary_string, matrix_size=16)
 The matrix_size parameter tells the method how big each matrix which is constructed from the data should be. A number 4 would result in 4x4 matrices and a number 16 would result in 16x16 matrices etc. Note that this test **depends** on the BinaryMatrix class contained inside the RandomnessTester.py file.
 ```
 
+#### Apply the Spectral (Discrete Fourier Transform) test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the peak heights in the Discrete Fourier Transform of the sequence. The purpose of
+this test is to detect periodic features (i.e., repetitive patterns that are near each other) in the tested
+sequence that would indicate a deviation from the assumption of randomness. The intention is to detect whether
+the number of peaks exceeding the 95 % threshold is significantly different than 5 %.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.spectral(example_binary_string)
+```
+
+#### Apply the Non Overlapping Patterns test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the number of occurrences of pre-specified target strings. The purpose of this
+test is to detect generators that produce too many occurrences of a given non-periodic (aperiodic) pattern.
+For this test and for the Overlapping Template Matching test of Section 2.8, an m-bit window is used to
+search for a specific m-bit pattern. If the pattern is not found, the window slides one bit position. If the
+pattern is found, the window is reset to the bit after the found pattern, and the search resumes.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.non_overlapping_patterns(example_binary_string, pattern="000000001", num_blocks=8)
+```
+
+The pattern parameter tells the method what binary pattern it should match on, and the num_block parameter tells the method how many blocks it should create from the data. These blocks do not overlap with one another which is why this is called the non overlapping patterns test.
+
+#### Apply the Overlapping Patterns test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of the Overlapping Template Matching test is the number of occurrences of pre-specified target
+strings. Both this test and the Non-overlapping Template Matching test of Section 2.7 use an m-bit
+window to search for a specific m-bit pattern. As with the test in Section 2.7, if the pattern is not found,
+the window slides one bit position. The difference between this test and the test in Section 2.7 is that
+when the pattern is found, the window slides only one bit before resuming the search.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.non_overlapping_patterns(example_binary_string, pattern_size=9, block_size=1032)
+```
+
+The pattern parameter tells the method what binary pattern it should match on, and the block_size parameter tells the method how many big each blog created from the data should be. These blocks do overlap with one another which is why this is called the overlapping patterns test.
+
+#### Apply the Universal test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the number of bits between matching patterns (a measure that is related to the
+length of a compressed sequence). The purpose of the test is to detect whether or not the sequence can be
+significantly compressed without loss of information. A significantly compressible sequence is considered
+to be non-random. **This test is always skipped because the requirements on the lengths of the binary
+strings are too high i.e. there have not been enough trading days to meet the requirements.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.universal(example_binary_string)
+```
+
+NOTE: the universal test requires quite a lot of data to produce a statistically significant result.
+
 
