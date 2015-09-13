@@ -50,10 +50,21 @@ Muliple binary conversion methodologies are supported by the BinaryFrame class, 
 
 The below "tutorial" shows how to very simply just apply each test in the suite to a binary strings. This tutorial does not deal with any of the automated methods for running the full suite of tests on a BinaryFrame object because most people would most probably not need to use all of the tests and would probably prefer some freedom regarding how they interface with the NIST randomness tests.
 
-## Step 1 - Create a Randomness Tester Object
+## Create a Randomness Tester Object
+
+To create a RandomnessTester object which can be used independently of the BinaryFrame approach just pass in a None reference for the BinaryFrame object.
 
 ```python
-rng_tester = RandomnessTester(None, False, 00, 00)
+rng_tester = RandomnessTester(None)
 ```
+
+To test that the RandomnessTester is working correctly (i.e. check that the computed P-values for each example data sets in the TestData folder match the expected P-values) do the following
+
+```python
+rng_tester.test_randomness_tester()
+```
+
+The expected output from this method is given below:
+
 
 
