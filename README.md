@@ -50,7 +50,7 @@ Muliple binary conversion methodologies are supported by the BinaryFrame class, 
 
 The below "tutorial" shows how to very simply just apply each test in the suite to a binary strings. This tutorial does not deal with any of the automated methods for running the full suite of tests on a BinaryFrame object because most people would most probably not need to use all of the tests and would probably prefer some freedom regarding how they interface with the NIST randomness tests.
 
-## Create a Randomness Tester Object
+#### Create a Randomness Tester Object
 
 To create a RandomnessTester object which can be used independently of the BinaryFrame approach just pass in a None reference for the BinaryFrame object.
 
@@ -160,5 +160,32 @@ sqrt2       	p expected =  0.317127 	p computed = 0.317127
 sqrt3       	p expected =  0.346469 	p computed = 0.346469
 ```
 
+#### Apply the Monobit test to one binary string sample
 
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the proportion of zeros and ones for the entire sequence. The purpose of this test is
+to determine whether the number of ones and zeros in a sequence are approximately the same as would be expected
+for a truly random sequence. This test assesses the closeness of the fraction of ones to 1/2, that is the number
+of ones and zeros ina  sequence should be about the same. All subsequent tests depend on this test.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.monobit(example_binary_string)
+```
+
+#### Apply the Block Frequency test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this tests is the proportion of ones within M-bit blocks. The purpose of this tests is to determine
+whether the frequency of ones in an M-bit block is approximately M/2, as would be expected under an assumption
+of randomness. For block size M=1, this test degenerates to the monobit frequency test.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.block_frequency(example_binary_string, block_size=64)
+```
+
+The block_size parameter tells the method how big each block (substring) of the binary string should be.
 

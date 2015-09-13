@@ -67,97 +67,98 @@ rng_tester.test_randomness_tester()
 The expected output from this method is given below:
 
 ```
-	 Testing Monobit Test
-	 pi          	p expected =  0.578211 	p computed = 0.578211
-	 e           	p expected =  0.953749 	p computed = 0.953749
-	 sqrt2       	p expected =  0.811881 	p computed = 0.811881
-	 sqrt3       	p expected =  0.610051 	p computed = 0.610051
+Testing Monobit Test
+pi          	p expected =  0.578211 	p computed = 0.578211
+e           	p expected =  0.953749 	p computed = 0.953749
+sqrt2       	p expected =  0.811881 	p computed = 0.811881
+sqrt3       	p expected =  0.610051 	p computed = 0.610051
+ 
+Testing Block Frequency Test
+pi          	p expected =  0.380615 	p computed = 0.380615
+e           	p expected =  0.211072 	p computed = 0.211072
+sqrt2       	p expected =  0.833222 	p computed = 0.833222
+sqrt3       	p expected =  0.473961 	p computed = 0.473961
 
-	 Testing Block Frequency Test
-	 pi          	p expected =  0.380615 	p computed = 0.380615
-	 e           	p expected =  0.211072 	p computed = 0.211072
-	 sqrt2       	p expected =  0.833222 	p computed = 0.833222
-	 sqrt3       	p expected =  0.473961 	p computed = 0.473961
+Testing Independent Runs Test
+pi          	p expected =  0.419268 	p computed = 0.419268
+e           	p expected =  0.561917 	p computed = 0.561917
+sqrt2       	p expected =  0.313427 	p computed = 0.313427
+sqrt3       	p expected =  0.261123 	p computed = 0.261123
 
-	 Testing Independent Runs Test
-	 pi          	p expected =  0.419268 	p computed = 0.419268
-	 e           	p expected =  0.561917 	p computed = 0.561917
-	 sqrt2       	p expected =  0.313427 	p computed = 0.313427
-	 sqrt3       	p expected =  0.261123 	p computed = 0.261123
+Testing Longest Runs Test
+pi          	p expected =  0.02439 	p computed = 0.024390
+e           	p expected =  0.718945 	p computed = 0.718945
+sqrt2       	p expected =  0.012117 	p computed = 0.012117
+sqrt3       	p expected =  0.446726 	p computed = 0.446726
 
-	 Testing Longest Runs Test
-	 pi          	p expected =  0.02439 	p computed = 0.024390
-	 e           	p expected =  0.718945 	p computed = 0.718945
-	 sqrt2       	p expected =  0.012117 	p computed = 0.012117
-	 sqrt3       	p expected =  0.446726 	p computed = 0.446726
+Check Spectral Test
+pi          	p expected =  0.010186 	p computed = 0.010186
+e           	p expected =  0.847187 	p computed = 0.847187
+sqrt2       	p expected =  0.581909 	p computed = 0.581909
+sqrt3       	p expected =  0.776046 	p computed = 0.776046
 
-	 Check Spectral Test
-	 pi          	p expected =  0.010186 	p computed = 0.010186
-	 e           	p expected =  0.847187 	p computed = 0.847187
-	 sqrt2       	p expected =  0.581909 	p computed = 0.581909
-	 sqrt3       	p expected =  0.776046 	p computed = 0.776046
+Check Non Overlapping Patterns Test
+pi          	p expected =  0.165757 	p computed = 0.165757
+e           	p expected =  0.07879 	p computed = 0.078790
+sqrt2       	p expected =  0.569461 	p computed = 0.569461
+sqrt3       	p expected =  0.532235 	p computed = 0.532235
 
-	 Check Non Overlapping Patterns Test
-	 pi          	p expected =  0.165757 	p computed = 0.165757
-	 e           	p expected =  0.07879 	p computed = 0.078790
-	 sqrt2       	p expected =  0.569461 	p computed = 0.569461
-	 sqrt3       	p expected =  0.532235 	p computed = 0.532235
+Check Overlapping Patterns Test
+pi          	p expected =  0.296897 	p computed = 0.296897
+e           	p expected =  0.110434 	p computed = 0.110434
+sqrt2       	p expected =  0.791982 	p computed = 0.791982
+sqrt3       	p expected =  0.082716 	p computed = 0.082716
 
-	 Check Overlapping Patterns Test
-	 pi          	p expected =  0.296897 	p computed = 0.296897
-	 e           	p expected =  0.110434 	p computed = 0.110434
-	 sqrt2       	p expected =  0.791982 	p computed = 0.791982
-	 sqrt3       	p expected =  0.082716 	p computed = 0.082716
+Check Universal Test
+pi          	p expected =  0.669012 	p computed = 0.669012
+e           	p expected =  0.282568 	p computed = 0.282568
+sqrt2       	p expected =  0.130805 	p computed = 0.130805
+sqrt3       	p expected =  0.165981 	p computed = 0.165981
 
-	 Check Universal Test
-	 pi          	p expected =  0.669012 	p computed = 0.669012
-	 e           	p expected =  0.282568 	p computed = 0.282568
-	 sqrt2       	p expected =  0.130805 	p computed = 0.130805
-	 sqrt3       	p expected =  0.165981 	p computed = 0.165981
+Check Serial Test
+pi          	p expected =  0.143005 	p computed = 0.143005
+e           	p expected =  0.766182 	p computed = 0.766182
+sqrt2       	p expected =  0.861925 	p computed = 0.861925
+sqrt3       	p expected =  0.1575 	p computed = 0.157500
 
-	 Check Serial Test
-	 pi          	p expected =  0.143005 	p computed = 0.143005
-	 e           	p expected =  0.766182 	p computed = 0.766182
-	 sqrt2       	p expected =  0.861925 	p computed = 0.861925
-	 sqrt3       	p expected =  0.1575 	p computed = 0.157500
+Check Approximate Entropy Test
+pi          	p expected =  0.361595 	p computed = 0.361595
+e           	p expected =  0.700073 	p computed = 0.700073
+sqrt2       	p expected =  0.88474 	p computed = 0.884740
+sqrt3       	p expected =  0.180481 	p computed = 0.180481
 
-	 Check Approximate Entropy Test
-	 pi          	p expected =  0.361595 	p computed = 0.361595
-	 e           	p expected =  0.700073 	p computed = 0.700073
-	 sqrt2       	p expected =  0.88474 	p computed = 0.884740
-	 sqrt3       	p expected =  0.180481 	p computed = 0.180481
+Check Cumulative Sums Test
+pi          	p expected =  0.628308 	p computed = 0.628308
+e           	p expected =  0.669887 	p computed = 0.669886
+sqrt2       	p expected =  0.879009 	p computed = 0.879009
+sqrt3       	p expected =  0.917121 	p computed = 0.917121
 
-	 Check Cumulative Sums Test
-	 pi          	p expected =  0.628308 	p computed = 0.628308
-	 e           	p expected =  0.669887 	p computed = 0.669886
-	 sqrt2       	p expected =  0.879009 	p computed = 0.879009
-	 sqrt3       	p expected =  0.917121 	p computed = 0.917121
+Random Excursions Test
+pi          	p expected =  0.844143 	p computed = 0.844143
+e           	p expected =  0.786868 	p computed = 0.786868
+sqrt2       	p expected =  0.216235 	p computed = 0.216235
+sqrt3       	p expected =  0.783283 	p computed = 0.783283
 
-	 Random Excursions Test
-	 pi          	p expected =  0.844143 	p computed = 0.844143
-	 e           	p expected =  0.786868 	p computed = 0.786868
-	 sqrt2       	p expected =  0.216235 	p computed = 0.216235
-	 sqrt3       	p expected =  0.783283 	p computed = 0.783283
+Random Excursions Variant Test
+pi          	p expected =  0.760966 	p computed = 0.760966
+e           	p expected =  0.826009 	p computed = 0.826009
+sqrt2       	p expected =  0.566118 	p computed = 0.566118
+sqrt3       	p expected =  0.155066 	p computed = 0.155066
 
-	 Random Excursions Variant Test
-	 pi          	p expected =  0.760966 	p computed = 0.760966
-	 e           	p expected =  0.826009 	p computed = 0.826009
-	 sqrt2       	p expected =  0.566118 	p computed = 0.566118
-	 sqrt3       	p expected =  0.155066 	p computed = 0.155066
+Testing Matrix Rank Test
+This may take a while please be patient.
+pi          	p expected =  0.083553 	p computed = 0.083553
+e           	p expected =  0.306156 	p computed = 0.306156
+sqrt2       	p expected =  0.82381 	p computed = 0.823810
+sqrt3       	p expected =  0.314498 	p computed = 0.314498
 
-	 Testing Matrix Rank Test
-	 This may take a while please be patient.
-	 pi          	p expected =  0.083553 	p computed = 0.083553
-	 e           	p expected =  0.306156 	p computed = 0.306156
-	 sqrt2       	p expected =  0.82381 	p computed = 0.823810
-	 sqrt3       	p expected =  0.314498 	p computed = 0.314498
-
-	 Check Linear Complexity Test
-	 This may take a while please be patient.
-	 pi          	p expected =  0.255475 	p computed = 0.255475
-	 e           	p expected =  0.826335 	p computed = 0.826335
-	 sqrt2       	p expected =  0.317127 	p computed = 0.317127
-	 sqrt3       	p expected =  0.346469 	p computed = 0.346469
+Check Linear Complexity Test
+This may take a while please be patient.
+pi          	p expected =  0.255475 	p computed = 0.255475
+e           	p expected =  0.826335 	p computed = 0.826335
+sqrt2       	p expected =  0.317127 	p computed = 0.317127
+sqrt3       	p expected =  0.346469 	p computed = 0.346469
 ```
+
 
 
