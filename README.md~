@@ -207,6 +207,7 @@ oscillation between zeros and ones is either too fast or too slow.
 ```python
 example_binary_string = "01010101010101010101010101010101"
 p_value = rng_tester.independent_runs(example_binary_string)
+```
 
 #### Apply the Longest Run of Ones test to one binary string sample
 
@@ -234,9 +235,9 @@ also appears in the DIEHARD battery of tests.
 ```python
 example_binary_string = "01010101010101010101010101010101"
 p_value = rng_tester.matrix_rank(example_binary_string, matrix_size=16)
+```
 
 The matrix_size parameter tells the method how big each matrix which is constructed from the data should be. A number 4 would result in 4x4 matrices and a number 16 would result in 16x16 matrices etc. Note that this test **depends** on the BinaryMatrix class contained inside the RandomnessTester.py file.
-```
 
 #### Apply the Spectral (Discrete Fourier Transform) test to one binary string sample
 

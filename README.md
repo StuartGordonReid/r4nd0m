@@ -6,7 +6,7 @@ r4nd0m is a project created by Stuart Reid to test the validity of the random wa
 ### Disclaimer
 --------------
 
-r4nd0m implements the NIST suite of Cryptographic tests in Python and carries the same disclaimer as the original [C implementation](http://csrc.nist.gov/groups/ST/toolkit/rng/documentation_software.html). Software disclaimer: "This software was developed at the National Institute of Standards and Technology by employees of the Federal Government in the course of their official duties. Pursuant to title 17 Section 105 of the United States Code this software is not subject to copyright protection and is in the public domain. The NIST Statistical Test Suite is an experimental system. NIST assumes no responsibility whatsoever for its use by other parties, and makes no guarantees, expressed or implied, about its quality, reliability, or any other characteristic. We would appreciate acknowledgment if the software is used."
+r4nd0m implements the NIST suite of Cryptographic tests in Python and carries the same disclaimer as the original [C implementation](http://csrc.nist.gov/groups/ST/toolkit/rng/documentation_software.html). Software disclaimer: "This software was developed by Stuart Reid. Stuart Reid assumes no responsibility whatsoever for its use by other parties, and makes no guarantees, expressed or implied, about its quality, readibility, or any other characteristic. Usage of this implementation should acknowledge this repository, and the original NIST implementation."
 
 ### Dependencies
 ----------------
