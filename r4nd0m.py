@@ -31,7 +31,7 @@ def setup_environment():
     return token
 
 
-def construct_binary_frame(data_sets, method, token, start, end, years_per_block):
+def construct_binary_frame(data_sets, method, token, start, end, years_per_block, isamples):
     """
     This method is used to construct a BinaryFrame object from a meta-data file which specifies what data sets we want
     to download and what columns we are interested in from that data.
@@ -59,11 +59,11 @@ def construct_binary_frame(data_sets, method, token, start, end, years_per_block
         my_arguments.append(Argument(data_sets[i], start_date, end_date, data_prefix, drop, transform))
     data_frame_full = downloader.get_data_sets(my_arguments)
     binary_frame = BinaryFrame(data_frame_full, start, end, years_per_block)
-    binary_frame.convert(method)
+    binary_frame.convert(method, independent_samples=isamples)
     return binary_frame
 
 
-def run_experiments(data_sets, block_sizes, q_sizes, method, start, end, years_per_block):
+def run_experiments(data_sets, block_sizes, q_sizes, method, start, end, years_per_block, isamples=False):
     """
     This method just runs the experiments which were used to write the blog post
     :param data_sets: the file containing a list of data sets we want
@@ -75,10 +75,7 @@ def run_experiments(data_sets, block_sizes, q_sizes, method, start, end, years_p
     :param years_per_block: the time frame / dimension we want to look at
     :return: nothing just prints out stuff
     """
-    breaker = "".zfill(200)
-    breaker = breaker.replace('0', '*')
-
-    print("\n" + breaker)
+    print("\n")
     print("METHOD =", method.upper())
 
     length = 256 * (end - start)
@@ -89,7 +86,7 @@ def run_experiments(data_sets, block_sizes, q_sizes, method, start, end, years_p
     prng_data = pandas.DataFrame(numpy.array(prng))
     prng_data.columns = ["Mersenne"]
     prng_binary_frame = BinaryFrame(prng_data, start, end, years_per_block)
-    prng_binary_frame.convert(method, convert=False)
+    prng_binary_frame.convert(method, convert=False, independent_samples=isamples)
     # method, real_data, start_year, end_year, block_size
     rng_tester = RandomnessTester(prng_binary_frame, False, 00, 00)
     passed = rng_tester.run_test_suite(block_sizes, q_sizes)
@@ -103,21 +100,20 @@ def run_experiments(data_sets, block_sizes, q_sizes, method, start, end, years_p
     nrand_data = pandas.DataFrame(numpy.array(nrand))
     nrand_data.columns = ["Deterministic"]
     nrand_binary_frame = BinaryFrame(nrand_data, start, end, years_per_block)
-    nrand_binary_frame.convert(method, convert=True)
+    nrand_binary_frame.convert(method, convert=True, independent_samples=isamples)
     rng_tester = RandomnessTester(nrand_binary_frame, False, 00, 00)
     passed = rng_tester.run_test_suite(block_sizes, q_sizes)
     for x in passed:
         all_passed.append(x)
 
     t = setup_environment()
-    my_binary_frame = construct_binary_frame(data_sets, method, t, start, end, years_per_block)
+    my_binary_frame = construct_binary_frame(data_sets, method, t, start, end, years_per_block, isamples)
     rng_tester = RandomnessTester(my_binary_frame, True, start, end)
-    # my_binary_frame = construct_long_binary_frame(method, stream_length)
     passed = rng_tester.run_test_suite(block_sizes, q_sizes)
     for x in passed:
         all_passed.append(x)
 
-    print("\n" + breaker)
+    print("\n")
     return all_passed
 
 
