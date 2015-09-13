@@ -21,7 +21,7 @@ Each test in the suite may or may not depend on one or all of the below packages
 ### Contributors
 ----------------
 
-1. [Stuart Reid](http://www.TuringFinance.com)
+1. [Stuart Reid](http://www.TuringFinance.com) see [Hacking The Random Walk Hypothesis](http://www.TuringFinance.com/hacking-the-random-walk-hypothesis)
 
 ### Project Stucture
 --------------------
@@ -30,9 +30,9 @@ The whole project is broken up into six classes and a main script which pulls ev
 
 1. **r4nd0m** - this is the main script which pulls everything together.
 3. **RandomnessTester** - this class contains all of the NIST tests.
-4. **BinaryMatrix** - this class encapsulates the algorithm specified in the NIST documentation for calculating the rank of a binary matrix. This is not the same as the SVD method used to compute the rank of a matrix which is why the scipy.linalg package couldn't be used. This class could be more pythonic (pull requests welcome).
-5. **BinaryFrame** - this class, as the name suggests, is just a way of converting a pandas DataFrame to a dictionary of binary strings with the same column names. This dictionary and the decimal to binary conversion methods are encapsulated in this class. RandomnessTester simply takes in a BinaryFrame object and applies all of the NIST tests to each one of the binary strings contained in the dictionary.
-6. **QuandlInterface** and **Argument** - these two classes work together to allow you to interface with the Quandl.com API and download and join lists of datasets. Interesting dataset lists can be found in the MetaData folder of the project and your personal auth token can be stored in a .private.csv local file on your computer.
+4. **BinaryMatrix** - this class encapsulates the algorithm specified in the NIST documentation for calculating the rank of a binary matrix. This is not the same as the SVD method used to compute the rank of a matrix which is why the scipy.linalg package couldn't be used.
+5. **BinaryFrame** - this class, as the name suggests, is just a way of converting a pandas DataFrame to a dictionary of binary strings with the same column names. This dictionary and the decimal to binary conversion methods are encapsulated in this class. RandomnessTester simply takes in a BinaryFrame object and applies all of the NIST tests to the binary strings in the dictionary.
+6. **QuandlInterface** and **Argument** - these two classes work together to allow you to interface with the Quandl.com API and download and join lists of datasets. Interesting dataset lists can be found in the MetaData folder of the project and your personal Quandl authentication token can be stored in a .private.csv local file and loaded at runtime.
 7. **Colours** - this class just makes things look cool in the console.
 
 The UML diagram below shows how the project is structured (constructed using Dia):
