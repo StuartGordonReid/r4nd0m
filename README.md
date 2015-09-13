@@ -304,4 +304,107 @@ p_value = rng_tester.universal(example_binary_string)
 
 NOTE: the universal test requires quite a lot of data to produce a statistically significant result.
 
+#### Apply the Linear Complexity test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the length of a linear feedback shift register (LFSR). The purpose of this test is to
+determine whether or not the sequence is complex enough to be considered random. Random sequences are
+characterized by longer LFSRs. An LFSR that is too short implies non-randomness.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.linear_complexity(example_binary_string, block_size=500)
+```
+
+The block size parameter specifies how bit each block (partition of the binary string data) should be. It is recommended that a block size of greater than or equal to 500 bits is used. Note also that the Linear Complexity test uses the berlekamp massey algorithm which has been implemented in the RandomnessTester.py file.
+
+#### Apply the Serial test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the frequency of all possible overlapping m-bit patterns across the entire
+sequence. The purpose of this test is to determine whether the number of occurrences of the 2m m-bit
+overlapping patterns is approximately the same as would be expected for a random sequence. Random
+sequences have uniformity; that is, every m-bit pattern has the same chance of appearing as every other
+m-bit pattern. Note that for m = 1, the Serial test is equivalent to the Frequency test of Section 2.1.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.linear_complexity(example_binary_string, pattern_length=16, method="both")
+```
+
+The pattern_length parameter specifies how long the patterns which are matched should be. Note that this test returns two P-values if the method parameter is set to "both", the first P-value if the method parameter is set to "first", and the minimum of the two P-values if the method parameter is set to "min".
+
+#### Apply the Approximate Entropy test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+As with the Serial test of Section 2.11, the focus of this test is the frequency of all possible overlapping
+m-bit patterns across the entire sequence. The purpose of the test is to compare the frequency of overlapping
+blocks of two consecutive/adjacent lengths (m and m+1) against the expected result for a random sequence.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.approximate_entropy(example_binary_string, pattern_length=16)
+```
+
+The pattern_length parameter specifies how long the patterns which are matched should be.
+
+#### Apply the Cumulative Sums test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the maximal excursion (from zero) of the random walk defined by the cumulative sum of
+adjusted (-1, +1) digits in the sequence. The purpose of the test is to determine whether the cumulative sum of
+the partial sequences occurring in the tested sequence is too large or too small relative to the expected
+behavior of that cumulative sum for random sequences. This cumulative sum may be considered as a random walk.
+For a random sequence, the excursions of the random walk should be near zero. For certain types of non-random
+sequences, the excursions of this random walk from zero will be large.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_value = rng_tester.cumulative_sums(example_binary_string, method="forward")
+```
+
+There are two methods for performing the cumulative sums test: forwards and backwards. When the method parameter is equal to "backward", the input data is reversed and the cumulative sums test is applied as if the method passed was "forward".
+
+#### Apply the Random Excursions test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the number of cycles having exactly K visits in a cumulative sum random walk. The
+cumulative sum random walk is derived from partial sums after the (0,1) sequence is transferred to the
+appropriate (-1, +1) sequence. A cycle of a random walk consists of a sequence of steps of unit length taken at
+random that begin at and return to the origin. The purpose of this test is to determine if the number of visits
+to a particular state within a cycle deviates from what one would expect for a random sequence. This test is
+actually a series of eight tests (and conclusions), one test and conclusion for each of the states:
+
+States -> -4, -3, -2, -1 and +1, +2, +3, +4.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_values = rng_tester.random_excursions(example_binary_string)
+```
+
+Note that this test returns 8 P-values in the form of a numpy array. This is the P-value associated with each state.
+
+#### Apply the Random Excursions Variant test to one binary string sample
+
+Note that this description is taken from [the NIST documentation](http://csrc.nist.gov/publications/nistpubs/800-22-rev1a/SP800-22rev1a.pdf)
+
+The focus of this test is the total number of times that a particular state is visited (i.e., occurs) in a
+cumulative sum random walk. The purpose of this test is to detect deviations from the expected number of visits
+to various states in the random walk. This test is actually a series of eighteen tests (and conclusions), one
+test and conclusion for each of the states: -9, -8, …, -1 and +1, +2, …, +9.
+
+```python
+example_binary_string = "01010101010101010101010101010101"
+p_values = rng_tester.random_excursions_variant(example_binary_string)
+```
+
+Note that this test returns 18 P-values in the form of a numpy array. This is the P-value associated with each state. Note also that this test makes use of the get_frequency method included in the RandomnessTester.py file.
+
+
+
 
